@@ -272,3 +272,4 @@ cython_debug/
 
 croppedimage/
 temp/
+output/

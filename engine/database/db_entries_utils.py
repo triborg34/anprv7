@@ -60,7 +60,7 @@ def db_entries_time(number, charConfAvg, plateConfAvg, croppedPlate, status, fra
         
         # Check if character confidence is above 75%
         
-        screenshot_path = f"croppedimage/{number}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
+        screenshot_path = f"output/screenshot/{number}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
             # Save the full frame as a screenshot if `frame` is provided
         if frame is not None:
                 cv2.imwrite(screenshot_path, frame)
@@ -76,7 +76,7 @@ def db_entries_time(number, charConfAvg, plateConfAvg, croppedPlate, status, fra
                 display_date = timeNow.strftime("%Y-%m-%d")
 
 
-                plateImgName2 = f'D:/Programins/Codes/uianprt/assets/images/plates/{number}_{datetime.datetime.now().strftime("%m-%d")}.jpg'
+                plateImgName2 = f'output/cropedplate/{number}_{datetime.datetime.now().strftime("%m-%d")}.jpg'
                 cv2.imwrite(plateImgName2, croppedPlate)
 
                 entries = Entries(plateConfAvg, charConfAvg, display_date, display_time, number, status)
@@ -87,12 +87,12 @@ def db_entries_time(number, charConfAvg, plateConfAvg, croppedPlate, status, fra
                 display_time = time.strftime("%H:%M:%S")
                 display_date = time.strftime("%Y-%m-%d")
                 
-                screenshot_path = f"croppedimage/{number}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
+                screenshot_path = f"output/screenshot/{number}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
                 if frame is not None:
                          cv2.imwrite(screenshot_path, frame)
                          print(f"Screenshot saved to {screenshot_path} for plate {number} with character confidence {charConfAvg}%.")
 
-                plateImgName2 = f'D:/Programins/Codes/uianprt/assets/images/plates/{number}_{datetime.datetime.now().strftime("%m-%d")}.jpg'
+                plateImgName2 = f'output/cropedplate/{number}_{datetime.datetime.now().strftime("%m-%d")}.jpg'
                 cv2.imwrite(plateImgName2, croppedPlate)
 
                 entries = Entries(plateConfAvg, charConfAvg, display_date, display_time, number, status)
