@@ -269,4 +269,5 @@ cython_debug/
 #.idea/
 
 
-*./croppedimage
+*/croppedimage
+*/temp
