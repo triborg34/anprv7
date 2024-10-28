@@ -36,7 +36,7 @@ model_char = torch.hub.load('yolov5', 'custom', params.modelCharX_path, source='
 
 # RTSP or video source setup
 source = params.rtps if params.rtps else 0  # If params.rtps is defined, use it; otherwise, default to the webcam.
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(source)
 
 # Initialize buffer and retry count
 frame_buffer = queue.Queue(maxsize=buffer_size)
@@ -107,7 +107,7 @@ while retry_count < max_retries:
                         0.7, (0, 255, 0), 2, cv2.LINE_AA)
 
             # Call db_entries_time function to handle screenshot saving and any other logic
-            if(char_conf_avg > 75):
+            if(char_conf_avg >= 75):
                  db_entries_time(
                 number=plate_text,
                 charConfAvg=char_conf_avg,
