@@ -38,6 +38,7 @@ model_char = torch.hub.load('yolov5', 'custom', params.modelCharX_path, source='
 source = params.rtps if params.rtps else 0  # If params.rtps is defined, use it; otherwise, default to the webcam.
 cap = cv2.VideoCapture(source)
 
+
 # Initialize buffer and retry count
 frame_buffer = queue.Queue(maxsize=buffer_size)
 retry_count = 0
@@ -84,6 +85,7 @@ def detect_plate_chars(cropped_plate):
 def highlight_plate(image, x_min, y_min, x_max, y_max):
     cv2.rectangle(image, (x_min - 3, y_min - 3), (x_max + 3, y_max + 3), color=(0, 0, 255), thickness=3)
 
+
 # Main loop for processing frames
 while retry_count < max_retries:
     if frame_buffer.empty():
@@ -92,6 +94,7 @@ while retry_count < max_retries:
         continue
 
     frame = frame_buffer.get()
+
     plate_results = model_plate(frame).pandas().xyxy[0]  # Detect plates
 
     for _, plate in plate_results.iterrows():
