@@ -36,7 +36,7 @@ model_char = torch.hub.load('yolov5', 'custom', params.modelCharX_path, source='
 
 # RTSP or video source setup
 source = params.rtps if params.rtps else 0  # If params.rtps is defined, use it; otherwise, default to the webcam.
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(source)
 
 # Initialize buffer and retry count
 frame_buffer = queue.Queue(maxsize=buffer_size)

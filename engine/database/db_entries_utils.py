@@ -51,7 +51,7 @@ similarityTemp = ''
 def db_entries_time(number, charConfAvg, plateConfAvg, croppedPlate, status, frame=None):
     global similarityTemp
     isSimilar = check_similarity_threshold(similarityTemp, number)
-    screenshot_path = f"croppedimage/{number}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
+    
     
     # Only proceed if the plate number is unique
     if not isSimilar:
@@ -60,9 +60,7 @@ def db_entries_time(number, charConfAvg, plateConfAvg, croppedPlate, status, fra
         
         # Check if character confidence is above 75%
         if charConfAvg > 75:
-           
-            
-            
+            screenshot_path = f"croppedimage/{number}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
             # Save the full frame as a screenshot if `frame` is provided
             if frame is not None:
                 cv2.imwrite(screenshot_path, frame)
@@ -77,6 +75,7 @@ def db_entries_time(number, charConfAvg, plateConfAvg, croppedPlate, status, fra
                 display_time = timeNow.strftime("%H:%M:%S")
                 display_date = timeNow.strftime("%Y-%m-%d")
 
+
                 plateImgName2 = f'D:/Programins/Codes/uianprt/assets/images/plates/{number}_{datetime.datetime.now().strftime("%m-%d")}.jpg'
                 cv2.imwrite(plateImgName2, croppedPlate)
 
@@ -87,6 +86,11 @@ def db_entries_time(number, charConfAvg, plateConfAvg, croppedPlate, status, fra
             if number != '':
                 display_time = time.strftime("%H:%M:%S")
                 display_date = time.strftime("%Y-%m-%d")
+                if charConfAvg > 75:
+                     screenshot_path = f"croppedimage/{number}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
+                     if frame is not None:
+                         cv2.imwrite(screenshot_path, frame)
+                         print(f"Screenshot saved to {screenshot_path} for plate {number} with character confidence {charConfAvg}%.")
 
                 plateImgName2 = f'D:/Programins/Codes/uianprt/assets/images/plates/{number}_{datetime.datetime.now().strftime("%m-%d")}.jpg'
                 cv2.imwrite(plateImgName2, croppedPlate)
