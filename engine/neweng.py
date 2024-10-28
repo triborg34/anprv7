@@ -96,7 +96,7 @@ while retry_count < max_retries:
 
     for _, plate in plate_results.iterrows():
         plate_conf = int(plate['confidence'] * 100)
-        if plate_conf >= 60:
+        if plate_conf >= 75:
             x_min, y_min, x_max, y_max = int(plate['xmin']), int(plate['ymin']), int(plate['xmax']), int(plate['ymax'])
             highlight_plate(frame, x_min, y_min, x_max, y_max)
             cropped_plate = frame[y_min:y_max, x_min:x_max]
@@ -107,14 +107,15 @@ while retry_count < max_retries:
                         0.7, (0, 255, 0), 2, cv2.LINE_AA)
 
             # Call db_entries_time function to handle screenshot saving and any other logic
-            db_entries_time(
+            if(char_conf_avg > 75):
+                 db_entries_time(
                 number=plate_text,
                 charConfAvg=char_conf_avg,
                 plateConfAvg=plate_conf,
                 croppedPlate=cropped_plate,
                 status="Active",
                 frame=frame  # Pass the full frame for screenshot saving
-            )
+                 )
 
     # Calculate and display FPS on the frame
     fps = int(cap.get(cv2.CAP_PROP_FPS))
