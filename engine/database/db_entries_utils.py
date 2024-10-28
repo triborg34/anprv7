@@ -59,10 +59,10 @@ def db_entries_time(number, charConfAvg, plateConfAvg, croppedPlate, status, fra
         timeNow = datetime.datetime.now()
         
         # Check if character confidence is above 75%
-        if charConfAvg > 75:
-            screenshot_path = f"croppedimage/{number}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
+        
+        screenshot_path = f"croppedimage/{number}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
             # Save the full frame as a screenshot if `frame` is provided
-            if frame is not None:
+        if frame is not None:
                 cv2.imwrite(screenshot_path, frame)
                 print(f"Screenshot saved to {screenshot_path} for plate {number} with character confidence {charConfAvg}%.")
 
@@ -86,9 +86,9 @@ def db_entries_time(number, charConfAvg, plateConfAvg, croppedPlate, status, fra
             if number != '':
                 display_time = time.strftime("%H:%M:%S")
                 display_date = time.strftime("%Y-%m-%d")
-                if charConfAvg > 75:
-                     screenshot_path = f"croppedimage/{number}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
-                     if frame is not None:
+                
+                screenshot_path = f"croppedimage/{number}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
+                if frame is not None:
                          cv2.imwrite(screenshot_path, frame)
                          print(f"Screenshot saved to {screenshot_path} for plate {number} with character confidence {charConfAvg}%.")
 
