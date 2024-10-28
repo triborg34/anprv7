@@ -1,6 +1,15 @@
-opencv-python==4.8.0.76
-torch==2.0.1
-ultralytics==8.0.28
-numpy==1.24.2
-configparser==5.3.0
-pillow==9.5.0
+gitpython>=3.1.30
+matplotlib>=3.3
+numpy>=1.24.2  # higher version from your initial list
+opencv-python>=4.8.0.76  # higher version from your initial list
+Pillow>=9.5.0  # higher version from your initial list
+psutil  # system resources
+PyYAML>=5.3.1
+requests>=2.23.0
+scipy>=1.4.1
+thop>=0.1.1  # FLOPs computation
+torch>=2.0.1  # higher version from your initial list
+torchvision>=0.9.0
+tqdm>=4.64.0
+ultralytics>=8.0.232  # higher version from your list
+configparser==5.3.0  # from your initial list
