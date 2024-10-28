@@ -1,0 +1,116 @@
+import cv2
+import datetime
+import sqlite3
+import time
+
+from configParams import Parameters
+from database.classEntries import Entries
+from helper.text_decorators import check_similarity_threshold
+
+params = Parameters()
+
+fieldsList = ['platePercent', 'charPercent', 'eDate', 'eTime', 'plateNum', 'status']
+dbEntries = params.dbEntries
+
+def insterMyentry(platePercent, charPercent, eDate, eTime, plateNum, status, imagePath,scrnpath):
+    sqlconnect = sqlite3.connect('./database/entrieses.db')
+    sqlcuurser = sqlconnect.cursor()
+    excute = 'INSERT INTO entry VALUES (:platePercent, :charPercent, :eDate, :eTime, :plateNum, :status , :imgpath,:scrnpath)'
+    sqlcuurser.execute(excute, (platePercent, charPercent, eDate, eTime, plateNum, status, imagePath,scrnpath))
+
+    sqlconnect.commit()
+    sqlcuurser.close()
+
+def insertEntries(entry):
+    sqlConnect = sqlite3.connect(dbEntries)
+    sqlCursor = sqlConnect.cursor()
+
+    sqlCursor.execute(
+        "INSERT OR IGNORE INTO entries VALUES (:platePercent, :charPercent, :eDate, :eTime, :plateNum, :status)",
+        vars(entry))
+
+    sqlConnect.commit()
+    sqlConnect.close()
+
+def dbGetPlateLatestEntry(plateNumber):
+    sqlConnect = sqlite3.connect(dbEntries)
+    sqlCursor = sqlConnect.cursor()
+
+    FullEntriesSQL = f"""SELECT * FROM entries WHERE plateNum='{plateNumber}' ORDER BY eDate DESC LIMIT 1"""
+    FullEntries = sqlCursor.execute(FullEntriesSQL).fetchall()
+
+    if len(FullEntries) != 0:
+        FullData = dict(zip([c[0] for c in sqlCursor.description], FullEntries[0]))
+        sqlConnect.commit()
+        sqlConnect.close()
+        return Entries(**FullData)
+    return None
+
+similarityTemp = ''
+
+def db_entries_time(number, charConfAvg, plateConfAvg, croppedPlate, status, frame=None):
+    global similarityTemp
+    isSimilar = check_similarity_threshold(similarityTemp, number)
+    screenshot_path = f"croppedimage/{number}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
+    
+    # Only proceed if the plate number is unique
+    if not isSimilar:
+        similarityTemp = number
+        timeNow = datetime.datetime.now()
+        
+        # Check if character confidence is above 75%
+        if charConfAvg > 75:
+           
+            
+            
+            # Save the full frame as a screenshot if `frame` is provided
+            if frame is not None:
+                cv2.imwrite(screenshot_path, frame)
+                print(f"Screenshot saved to {screenshot_path} for plate {number} with character confidence {charConfAvg}%.")
+
+        # Database operations for plate detection (but excluding screenshot path)
+        result = dbGetPlateLatestEntry(number)
+        if result is not None and number != '':
+            strTime = result.getTime()
+            strDate = result.getDate()
+            if timeDifference(strTime, strDate):
+                display_time = timeNow.strftime("%H:%M:%S")
+                display_date = timeNow.strftime("%Y-%m-%d")
+
+                plateImgName2 = f'D:/Programins/Codes/uianprt/assets/images/plates/{number}_{datetime.datetime.now().strftime("%m-%d")}.jpg'
+                cv2.imwrite(plateImgName2, croppedPlate)
+
+                entries = Entries(plateConfAvg, charConfAvg, display_date, display_time, number, status)
+                insterMyentry(plateConfAvg, charConfAvg, display_date, display_time, number, status, plateImgName2,screenshot_path)
+                insertEntries(entries)
+        else:
+            if number != '':
+                display_time = time.strftime("%H:%M:%S")
+                display_date = time.strftime("%Y-%m-%d")
+
+                plateImgName2 = f'D:/Programins/Codes/uianprt/assets/images/plates/{number}_{datetime.datetime.now().strftime("%m-%d")}.jpg'
+                cv2.imwrite(plateImgName2, croppedPlate)
+
+                entries = Entries(plateConfAvg, charConfAvg, display_date, display_time, number, status)
+                insertEntries(entries)
+                insterMyentry(plateConfAvg, charConfAvg, display_date, display_time, number, status, plateImgName2,screenshot_path)
+
+def getFieldNames(fieldsList):
+    fieldNamesOutput = []
+    for value in fieldsList:
+        fieldNamesOutput.append(params.fieldNames[value])
+    return fieldNamesOutput
+
+def timeDifference(strTime, strDate):
+    # Uncomment the following if you want to calculate the actual time difference
+    # start_time = datetime.strptime(strTime + ' ' + strDate, "%H:%M:%S %Y-%m-%d")
+    # end_time = datetime.strptime(datetime.now().strftime("%H:%M:%S %Y-%m-%d"), "%H:%M:%S %Y-%m-%d")
+    # delta = end_time - start_time
+    # sec = delta.total_seconds()
+    # min = (sec / 60).__ceil__()
+    min = 2  # Set to 2 for testing purposes
+
+    if min > 1:
+        return True
+    else:
+        return False
