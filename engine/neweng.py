@@ -37,6 +37,7 @@ model_char = torch.hub.load('yolov5', 'custom', params.modelCharX_path, source='
 # RTSP or video source setup
 source = params.rtps if params.rtps else 0  # If params.rtps is defined, use it; otherwise, default to the webcam.
 cap = cv2.VideoCapture(source)
+cap.set(cv2.CAP_PROP_FPS, 5)
 
 
 # Initialize buffer and retry count
@@ -99,7 +100,7 @@ while retry_count < max_retries:
 
     for _, plate in plate_results.iterrows():
         plate_conf = int(plate['confidence'] * 100)
-        if plate_conf >= 75:
+        if plate_conf >= 85:
             x_min, y_min, x_max, y_max = int(plate['xmin']), int(plate['ymin']), int(plate['xmax']), int(plate['ymax'])
             highlight_plate(frame, x_min, y_min, x_max, y_max)
             cropped_plate = frame[y_min:y_max, x_min:x_max]
