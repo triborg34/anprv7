@@ -1,3 +1,4 @@
+import logging
 import cv2
 import torch
 import time
@@ -9,6 +10,8 @@ from database.db_entries_utils import db_entries_time  # Import the function for
 import queue
 import threading
 
+logging.getLogger('torch').setLevel(logging.ERROR)
+logging.getLogger('torchvision').setLevel(logging.ERROR)
 warnings.filterwarnings("ignore", category=UserWarning)
 params = Parameters()
 
