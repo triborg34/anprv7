@@ -36,6 +36,7 @@ class Parameters:
         modelconfig = config_object["MODELCONFIG"]
         self.modelPlate_path = modelconfig["platemodel"]
         self.modelCharX_path = modelconfig["charmodel"]
+        self.modelCar_path=modelconfig["carmodel"]
         sourceConfig = config_object["SOURCEDETECT"]
         self.video = sourceConfig["video"]
         self.rtps = sourceConfig["rtps"]

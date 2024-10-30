@@ -9,6 +9,12 @@ from configParams import Parameters
 from database.db_entries_utils import db_entries_time  # Import the function for database logging
 import queue
 import threading
+import pathlib
+
+import pathlib
+
+temp = pathlib.PosixPath
+pathlib.PosixPath = pathlib.WindowsPath
 
 logging.getLogger('torch').setLevel(logging.ERROR)
 logging.getLogger('torchvision').setLevel(logging.ERROR)
@@ -33,15 +39,17 @@ def get_device():
 device = get_device()
 print(f"Using device: {device}")
 
-# Load models for plate and character detection
-model_plate = torch.hub.load('yolov5', 'custom', params.modelPlate_path, source='local', device=device)
-model_char = torch.hub.load('yolov5', 'custom', params.modelCharX_path, source='local', device=device)
+# Load models for plate, character, and vehicle detection
+model_plate = torch.hub.load('yolov5', 'custom', params.modelPlate_path, source='local', device=device,force_reload=True)
+model_char = torch.hub.load('yolov5', 'custom', params.modelCharX_path, source='local', device=device,force_reload=True)
+model_vehicle = torch.hub.load('yolov5', 'custom', params.modelCar_path, source='local', device=device, force_reload=True)  # Load vehicle detection model
+# model_vehicle = torch.load('./model/car.pt', map_location=device)
+
 
 # RTSP or video source setup
 source = params.rtps if params.rtps else 0  # If params.rtps is defined, use it; otherwise, default to the webcam.
 cap = cv2.VideoCapture(source)
-cap.set(cv2.CAP_PROP_FPS, 5)
-
+cap.set(cv2.CAP_PROP_FPS, 25)
 
 # Initialize buffer and retry count
 frame_buffer = queue.Queue(maxsize=buffer_size)
@@ -89,7 +97,6 @@ def detect_plate_chars(cropped_plate):
 def highlight_plate(image, x_min, y_min, x_max, y_max):
     cv2.rectangle(image, (x_min - 3, y_min - 3), (x_max + 3, y_max + 3), color=(0, 0, 255), thickness=3)
 
-
 # Main loop for processing frames
 while retry_count < max_retries:
     if frame_buffer.empty():
@@ -99,8 +106,27 @@ while retry_count < max_retries:
 
     frame = frame_buffer.get()
 
-    plate_results = model_plate(frame).pandas().xyxy[0]  # Detect plates
+    # Vehicle detection
+    vehicle_results = model_vehicle(frame).pandas().xyxy[0]
+    for _, vehicle in vehicle_results.iterrows():
+        vehicle_conf = int(vehicle['confidence'] * 100)
+        if vehicle_conf >= 85:  # Adjust confidence threshold if needed
+            x_min, y_min, x_max, y_max = int(vehicle['xmin']), int(vehicle['ymin']), int(vehicle['xmax']), int(vehicle['ymax'])
+            vehicle_class = int(vehicle['class'])
+            class_name = "Unknown"
+            if vehicle_class == 0:
+                class_name = "Bus"
+            elif vehicle_class == 1:
+                class_name = "Car"
+            elif vehicle_class == 2:
+                class_name = "Truck"
 
+            # Draw rectangle and label for the detected vehicle
+            cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), color=(255, 0, 0), thickness=2)
+            cv2.putText(frame, f"{class_name}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2, cv2.LINE_AA)
+
+    # License plate detection
+    plate_results = model_plate(frame).pandas().xyxy[0]
     for _, plate in plate_results.iterrows():
         plate_conf = int(plate['confidence'] * 100)
         if plate_conf >= 85:
@@ -129,7 +155,7 @@ while retry_count < max_retries:
     cv2.putText(frame, f"FPS: {fps}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
     
     # Display the frame without altering colors
-    cv2.imshow('License Plate Detection', frame)
+    cv2.imshow('License Plate and Vehicle Detection', frame)
 
     # Break on 'q' key press
     if cv2.waitKey(1) & 0xFF == ord('q'):

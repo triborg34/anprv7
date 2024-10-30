@@ -1,3 +1,4 @@
+import os
 import cv2
 import datetime
 import sqlite3
@@ -7,10 +8,53 @@ from configParams import Parameters
 from database.classEntries import Entries
 from helper.text_decorators import check_similarity_threshold
 
+def create_database_if_not_exists(db_path):
+    # Check if the database file already exists
+    if not os.path.exists(db_path):
+        # Create a new database and define the tables
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        # Create `entry` table for `insterMyentry` function
+        cursor.execute('''CREATE TABLE IF NOT EXISTS entry (
+                            platePercent REAL,
+                            charPercent REAL,
+                            eDate TEXT,
+                            eTime TEXT,
+                            plateNum TEXT,
+                            status TEXT,
+                            imgpath TEXT,
+                            scrnpath TEXT
+                          )''')
+
+        # Create `entries` table for `insertEntries` function
+        cursor.execute('''CREATE TABLE IF NOT EXISTS entries (
+                            platePercent REAL,
+                            charPercent REAL,
+                            eDate TEXT,
+                            eTime TEXT,
+                            plateNum TEXT PRIMARY KEY,
+                            status TEXT
+                          )''')
+
+        # Commit changes and close connection
+        conn.commit()
+        conn.close()
+        print(f"Database created at {db_path} with tables `entry` and `entries`.")
+    else:
+        print(f"Database already exists at {db_path}.")
+
+
+
+
 params = Parameters()
 
 fieldsList = ['platePercent', 'charPercent', 'eDate', 'eTime', 'plateNum', 'status']
 dbEntries = params.dbEntries
+db_path = './database/entrieses.db'
+
+create_database_if_not_exists(db_path=db_path)
+
 
 def insterMyentry(platePercent, charPercent, eDate, eTime, plateNum, status, imagePath,scrnpath):
     sqlconnect = sqlite3.connect('./database/entrieses.db')
