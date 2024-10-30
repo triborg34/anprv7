@@ -114,7 +114,7 @@ while retry_count < max_retries:
                         0.7, (0, 255, 0), 2, cv2.LINE_AA)
 
             # Call db_entries_time function to handle screenshot saving and any other logic
-            if(char_conf_avg >= 75):
+            if(char_conf_avg >= 75 and len(plate_text) >= 8 ):
                  db_entries_time(
                 number=plate_text,
                 charConfAvg=char_conf_avg,
