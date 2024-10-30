@@ -102,15 +102,10 @@ def db_entries_time(number, charConfAvg, plateConfAvg, croppedPlate, status, fra
         similarityTemp = number
         timeNow = datetime.datetime.now()
         
-        # Check if character confidence is above 75%
         
-        screenshot_path = f"output/screenshot/{number}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
-            # Save the full frame as a screenshot if `frame` is provided
-        if frame is not None:
-                cv2.imwrite(screenshot_path, frame)
-                print(f"Screenshot saved to {screenshot_path} for plate {number} with character confidence {charConfAvg}%.")
+      
 
-        # Database operations for plate detection (but excluding screenshot path)
+        # Database operations for plate detection 
         result = dbGetPlateLatestEntry(number)
         if result is not None and number != '':
             strTime = result.getTime()
@@ -118,6 +113,11 @@ def db_entries_time(number, charConfAvg, plateConfAvg, croppedPlate, status, fra
             if timeDifference(strTime, strDate):
                 display_time = timeNow.strftime("%H:%M:%S")
                 display_date = timeNow.strftime("%Y-%m-%d")
+                screenshot_path = f"output/screenshot/{number}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
+            # Save the full frame as a screenshot if `frame` is provided
+                if frame is not None:
+                   cv2.imwrite(screenshot_path, frame)
+                   print(f"Screenshot saved to {screenshot_path} for plate {number} with character confidence {charConfAvg}%.")
 
 
                 plateImgName2 = f'output/cropedplate/{number}_{datetime.datetime.now().strftime("%m-%d")}.jpg'

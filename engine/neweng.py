@@ -11,7 +11,6 @@ import queue
 import threading
 import pathlib
 
-import pathlib
 
 temp = pathlib.PosixPath
 pathlib.PosixPath = pathlib.WindowsPath
@@ -49,7 +48,7 @@ model_vehicle = torch.hub.load('yolov5', 'custom', params.modelCar_path, source=
 # RTSP or video source setup
 source = params.rtps if params.rtps else 0  # If params.rtps is defined, use it; otherwise, default to the webcam.
 cap = cv2.VideoCapture(source)
-cap.set(cv2.CAP_PROP_FPS, 25)
+
 
 # Initialize buffer and retry count
 frame_buffer = queue.Queue(maxsize=buffer_size)
