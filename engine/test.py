@@ -1,4 +1,3 @@
-import logging
 import cv2
 import torch
 import time
@@ -9,20 +8,13 @@ from configParams import Parameters
 from database.db_entries_utils import db_entries_time  # Import the function for database logging
 import queue
 import threading
-import pathlib
 
-
-temp = pathlib.PosixPath
-pathlib.PosixPath = pathlib.WindowsPath
-
-logging.getLogger('torch').setLevel(logging.ERROR)
-logging.getLogger('torchvision').setLevel(logging.ERROR)
 warnings.filterwarnings("ignore", category=UserWarning)
 params = Parameters()
 
 # Buffer and retry parameters
-buffer_size = 25  # Number of frames to hold in the buffer
-buffer_fill_time =30   # Time in seconds to fill the buffer initially
+buffer_size = 10  # Number of frames to hold in the buffer
+buffer_fill_time = 10  # Time in seconds to fill the buffer initially
 max_retries = 5  # Max retries if the buffer or source fails
 
 # Device setup
@@ -38,17 +30,13 @@ def get_device():
 device = get_device()
 print(f"Using device: {device}")
 
-# Load models for plate, character, and vehicle detection
-model_plate = torch.hub.load('yolov5', 'custom', params.modelPlate_path, source='local', device=device,force_reload=True)
-model_char = torch.hub.load('yolov5', 'custom', params.modelCharX_path, source='local', device=device,force_reload=True)
-model_vehicle = torch.hub.load('yolov5', 'custom', params.modelCar_path, source='local', device=device, force_reload=True)  # Load vehicle detection model
-# model_vehicle = torch.load('./model/car.pt', map_location=device)
-
+# Load models for plate and character detection
+model_plate = torch.hub.load('yolov5', 'custom', params.modelPlate_path, source='local', device=device)
+model_char = torch.hub.load('yolov5', 'custom', params.modelCharX_path, source='local', device=device)
 
 # RTSP or video source setup
 source = params.rtps if params.rtps else 0  # If params.rtps is defined, use it; otherwise, default to the webcam.
-cap = cv2.VideoCapture(source)
-
+cap = cv2.VideoCapture(params.rtps)
 
 # Initialize buffer and retry count
 frame_buffer = queue.Queue(maxsize=buffer_size)
@@ -104,31 +92,11 @@ while retry_count < max_retries:
         continue
 
     frame = frame_buffer.get()
+    plate_results = model_plate(frame).pandas().xyxy[0]  # Detect plates
 
-    # Vehicle detection
-    vehicle_results = model_vehicle(frame).pandas().xyxy[0]
-    for _, vehicle in vehicle_results.iterrows():
-        vehicle_conf = int(vehicle['confidence'] * 100)
-        if vehicle_conf >= 85:  # Adjust confidence threshold if needed
-            x_min, y_min, x_max, y_max = int(vehicle['xmin']), int(vehicle['ymin']), int(vehicle['xmax']), int(vehicle['ymax'])
-            vehicle_class = int(vehicle['class'])
-            class_name = "Unknown"
-            if vehicle_class == 0:
-                class_name = "Bus"
-            elif vehicle_class == 1:
-                class_name = "Car"
-            elif vehicle_class == 2:
-                class_name = "Truck"
-
-            # Draw rectangle and label for the detected vehicle
-            cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), color=(255, 0, 0), thickness=2)
-            cv2.putText(frame, f"{class_name}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2, cv2.LINE_AA)
-
-    # License plate detection
-    plate_results = model_plate(frame).pandas().xyxy[0]
     for _, plate in plate_results.iterrows():
         plate_conf = int(plate['confidence'] * 100)
-        if plate_conf >= 85:
+        if plate_conf >= 60:
             x_min, y_min, x_max, y_max = int(plate['xmin']), int(plate['ymin']), int(plate['xmax']), int(plate['ymax'])
             highlight_plate(frame, x_min, y_min, x_max, y_max)
             cropped_plate = frame[y_min:y_max, x_min:x_max]
@@ -139,22 +107,21 @@ while retry_count < max_retries:
                         0.7, (0, 255, 0), 2, cv2.LINE_AA)
 
             # Call db_entries_time function to handle screenshot saving and any other logic
-            if(char_conf_avg >= 75 and len(plate_text) >= 8 ):
-                 db_entries_time(
+            db_entries_time(
                 number=plate_text,
                 charConfAvg=char_conf_avg,
                 plateConfAvg=plate_conf,
                 croppedPlate=cropped_plate,
                 status="Active",
                 frame=frame  # Pass the full frame for screenshot saving
-                 )
+            )
 
     # Calculate and display FPS on the frame
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     cv2.putText(frame, f"FPS: {fps}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
-    
+
     # Display the frame without altering colors
-    cv2.imshow('License Plate and Vehicle Detection', frame)
+    cv2.imshow('License Plate Detection', frame)
 
     # Break on 'q' key press
     if cv2.waitKey(1) & 0xFF == ord('q'):
