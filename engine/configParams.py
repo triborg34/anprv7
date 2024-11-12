@@ -44,7 +44,7 @@ class Parameters:
         self.source = sourceConfig["source"]
        
 
-        self.video_path = r"D:/Programins/Codes/Anprv5/licancaep/1x.mp4"
+        self.video_path = r"C:/areffile/anprv7/engine/output/rooz.mp4"
         self.cpu_or_cuda = "cpu"  # choose device; "cpu" or "cuda"(if cuda is available)
 
         self.label_map = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'D', 'Gh', 'H', 'J', 'L', 'M',

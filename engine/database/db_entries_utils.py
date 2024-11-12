@@ -82,6 +82,7 @@ def dbGetPlateLatestEntry(plateNumber):
 
     FullEntriesSQL = f"""SELECT * FROM entries WHERE plateNum='{plateNumber}' ORDER BY eDate DESC LIMIT 1"""
     FullEntries = sqlCursor.execute(FullEntriesSQL).fetchall()
+    # print(FullEntries[0][4]==plateNumber)
 
     if len(FullEntries) != 0:
         FullData = dict(zip([c[0] for c in sqlCursor.description], FullEntries[0]))
