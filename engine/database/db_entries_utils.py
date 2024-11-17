@@ -77,7 +77,7 @@ def insertEntries(entry):
     sqlConnect.close()
 
 def dbGetPlateLatestEntry(plateNumber):
-    sqlConnect = sqlite3.connect(dbEntries)
+    sqlConnect = sqlite3.connect(db_path)
     sqlCursor = sqlConnect.cursor()
 
     FullEntriesSQL = f"""SELECT * FROM entries WHERE plateNum='{plateNumber}' ORDER BY eDate DESC LIMIT 1"""
@@ -126,7 +126,7 @@ def db_entries_time(number, charConfAvg, plateConfAvg, croppedPlate, status, fra
 
                 entries = Entries(plateConfAvg, charConfAvg, display_date, display_time, number, status)
                 insterMyentry(plateConfAvg, charConfAvg, display_date, display_time, number, status, plateImgName2,screenshot_path)
-                insertEntries(entries)
+                # insertEntries(entries)
         else:
             if number != '':
                 display_time = time.strftime("%H:%M:%S")
@@ -141,7 +141,7 @@ def db_entries_time(number, charConfAvg, plateConfAvg, croppedPlate, status, fra
                 cv2.imwrite(plateImgName2, croppedPlate)
 
                 entries = Entries(plateConfAvg, charConfAvg, display_date, display_time, number, status)
-                insertEntries(entries)
+                # insertEntries(entries)
                 insterMyentry(plateConfAvg, charConfAvg, display_date, display_time, number, status, plateImgName2,screenshot_path)
 
 def getFieldNames(fieldsList):
