@@ -38,10 +38,9 @@ class Parameters:
         self.modelCharX_path = modelconfig["charmodel"]
         self.modelCar_path=modelconfig["carmodel"]
         sourceConfig = config_object["SOURCEDETECT"]
-        self.video = sourceConfig["video"]
+   
         self.rtps = sourceConfig["rtps"]
-        self.webcam = sourceConfig["webcam"]
-        self.source = sourceConfig["source"]
+
        
 
         self.video_path = r"D:/Codes/anprv7/engine/output/rooz.mp4"
