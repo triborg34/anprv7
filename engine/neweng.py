@@ -132,6 +132,7 @@ while retry_count < max_retries:
     
     # Display the frame without altering colors
     cv2.imshow('License Plate Detection', frame)
+    cv2.imcount("")
 
     # Break on 'q' key press
     if cv2.waitKey(1) & 0xFF == ord('q'):

@@ -27,7 +27,9 @@ frame_buffer = deque(maxlen=100)  # Buffer to store processed frames
 # Device setup
 def get_device():
     if torch.cuda.is_available():
-        return torch.device("cuda")
+
+        torch.device("cuda")
+        return 0
     elif cv2.ocl.haveOpenCL():
         cv2.ocl.setUseOpenCL(True)
         return torch.device("cpu")  # PyTorch doesn't support OpenCL, so set it for OpenCV

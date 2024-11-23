@@ -73,7 +73,8 @@ while True:
         plate_conf = int(plate['confidence'] * 100)
         if plate_conf >= 85:
             x_min, y_min, x_max, y_max = int(plate['xmin']), int(plate['ymin']), int(plate['xmax']), int(plate['ymax'])
-            highlight_plate(frame, x_min, y_min, x_max, y_max)
+            # highlight_plate(frame, x_min, y_min, x_max, y_max)
+            cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
             cropped_plate = frame[y_min:y_max, x_min:x_max]
             plate_text, char_conf_avg = detect_plate_chars(cropped_plate)
 
