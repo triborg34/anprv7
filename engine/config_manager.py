@@ -71,16 +71,20 @@ def add_camera_ip(ip, file_path=CONFIG_FILE):
     config_parser.read(file_path)
 
     # Ensure the CAMERAS section exists
-    if not config_parser.has_section("CAMERAS"):
-        config_parser.add_section("CAMERAS")
+    # if not config_parser.has_section("CAMERAS"):
+    #     config_parser.add_section("CAMERAS")
+    if not config_parser.has_section("SOURCEDETECT"):
+        config_parser.add_section("SOURCEDETECT")
 
     # Find the next available camera key
-    camera_keys = [key for key in config_parser["CAMERAS"].keys() if key.startswith("camera_")]
+    # camera_keys = [key for key in config_parser["CAMERAS"].keys() if key.startswith("camera_")]
+    camera_keys = [key for key in config_parser["SOURCEDETECT"].keys() if key.startswith("rtps")]
     next_camera_num = len(camera_keys) + 1
-    new_key = f"camera_{next_camera_num}_ip"
+    # new_key = f"camera_{next_camera_num}_ip"
+    new_key = f"rtps"
 
     # Add the new camera IP
-    config_parser["CAMERAS"][new_key] = ip
+    config_parser["SOURCEDETECT"][new_key] = ip
 
     # Save the updated config
     with open(file_path, "w") as config_file:

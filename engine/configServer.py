@@ -17,6 +17,8 @@ class ConfigUpdateRequest(BaseModel):
 
 class CameraIPRequest(BaseModel):
     ip: str
+    username:str
+    password:str
 
 
 @app.get("/config")
@@ -46,8 +48,9 @@ def update_config(request: ConfigUpdateRequest):
 @app.post("/cameras")
 def add_camera(request: CameraIPRequest):
     """Add a new camera IP."""
+    print(request.username)
     try:
-        rtspIp=f"rtsp://{request.ip}:554/mainstream"
+        rtspIp=f"rtsp://{request.username}:{request.password}@{request.ip}:554/mainstream"
         new_camera = add_camera_ip(rtspIp)
         return {"status": "success", "new_camera": new_camera}
     except Exception as e:
