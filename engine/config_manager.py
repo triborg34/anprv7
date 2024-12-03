@@ -1,8 +1,8 @@
 import configparser
 import os
 
-CONFIG_FILE = "config.ini"
-
+CONFIG_FILE = "../engine/config.ini"
+file_Path='../engine/config.ini'
 
 def initialize_config():
     """Initialize the config file with default values if it doesn't exist."""
@@ -17,7 +17,7 @@ def initialize_config():
             save_or_update_config("DEFAULT", key, value)
 
 
-def save_or_update_config(section, key, value, file_path="config.ini"):
+def save_or_update_config(section, key, value, file_path=file_Path):
     """Save or update a configuration value."""
     config_parser = configparser.ConfigParser()
     config_parser.read(file_path)
@@ -41,7 +41,7 @@ def save_or_update_config(section, key, value, file_path="config.ini"):
 
 
 
-def load_config(file_path="config.ini"):
+def load_config(file_path=file_Path):
     """Load all configurations into a dictionary, excluding inherited DEFAULT keys."""
     config_parser = configparser.ConfigParser()
     config_parser.read(file_path)

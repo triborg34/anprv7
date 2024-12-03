@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from config_manager import initialize_config, save_or_update_config, load_config, add_camera_ip
+import uvicorn
 
 # Initialize the configuration file
 initialize_config()
@@ -55,3 +56,10 @@ def add_camera(request: CameraIPRequest):
         return {"status": "success", "new_camera": new_camera}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+
+print(__name__)
+if __name__ == "__main__":
+    uvicorn.run("configServer:app", host="127.0.0.1", port=8000, log_level="info")
