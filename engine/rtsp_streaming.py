@@ -123,7 +123,7 @@ async def transmit_frames(websocket, path=None):
                     # Annotate frame with plate text
                     cv2.putText(frame, f"Plate: {plate_text}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX,
                                 0.7, (0, 255, 0), 2, cv2.LINE_AA)
-
+                    plate_text.replace('Taxi','x')
                     # Save plate details if valid
                     if char_conf_avg >= 75 and len(plate_text) >= 8:
                         db_entries_time(
