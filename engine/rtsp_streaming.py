@@ -11,8 +11,8 @@ import threading
 import websockets
 from configParams import Parameters
 from database.db_entries_utils import db_entries_time
-import requests
-import ultralytics
+
+
 
 logging.getLogger('torch').setLevel(logging.ERROR)
 warnings.filterwarnings("ignore", category=UserWarning)
