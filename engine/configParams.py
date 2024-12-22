@@ -37,6 +37,10 @@ class Parameters:
         self.modelPlate_path = modelconfig["platemodel"]
         self.modelCharX_path = modelconfig["charmodel"]
         self.modelCar_path=modelconfig["carmodel"]
+        defuiltConfig=config_object['DEFAULT']
+        self.plateConf=defuiltConfig['plate_confidence']
+        self.charConf=defuiltConfig['character_confidence']
+        self.device=defuiltConfig['device']
         sourceConfig = config_object["SOURCEDETECT"]
    
         self.rtps = sourceConfig["rtps"]
@@ -44,7 +48,7 @@ class Parameters:
        
 
         self.video_path = r"D:/Codes/anprv7/engine/output/rooz.mp4"
-        self.cpu_or_cuda = "cpu"  # choose device; "cpu" or "cuda"(if cuda is available)
+        
 
         self.label_map = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'D', 'Gh', 'H', 'J', 'L', 'M',
                           'N',

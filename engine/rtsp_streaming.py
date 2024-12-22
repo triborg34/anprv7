@@ -46,7 +46,7 @@ buffer_logic = str(device) == "cpu"  # Use buffer only when running on CPU
 
 buffer_logic=True
 print(buffer_logic)
-
+print(int(params.charConf)/100)
 frame_buffer = queue.Queue(maxsize=5) if buffer_logic else None  # Only create buffer if on CPU
 retry_count = 0
 max_retries = 5
@@ -81,7 +81,8 @@ def detect_plate_chars(cropped_plate):
     detections = sorted(results.pred[0], key=lambda x: x[0])  # Sort by x-coordinate
     for det in detections:
         conf = det[4]
-        if conf > 0.5:
+        confidance=int(params.charConf)/100
+        if conf > confidences:
             cls = int(det[5].item())
             char = params.char_id_dict.get(str(cls), '')
             chars.append(char)
@@ -115,7 +116,7 @@ async def transmit_frames(websocket, path=None):
             plate_results = model_plate(frame).pandas().xyxy[0]
             for _, plate in plate_results.iterrows():
                 plate_conf = int(plate['confidence'] * 100)
-                if plate_conf >= 85:
+                if plate_conf >= params.plateConf:
                     x_min, y_min, x_max, y_max = int(plate['xmin']), int(plate['ymin']), int(plate['xmax']), int(plate['ymax'])
                     cropped_plate = frame[y_min:y_max, x_min:x_max]
                     plate_text, char_conf_avg = detect_plate_chars(cropped_plate)
