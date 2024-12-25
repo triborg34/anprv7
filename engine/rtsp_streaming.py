@@ -82,7 +82,7 @@ def detect_plate_chars(cropped_plate):
     for det in detections:
         conf = det[4]
         confidance=int(params.charConf)/100
-        if conf > confidences:
+        if conf > confidance:
             cls = int(det[5].item())
             char = params.char_id_dict.get(str(cls), '')
             chars.append(char)
