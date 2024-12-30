@@ -33,9 +33,12 @@ def get_device():
 
 device = get_device()
 
+#TODO:Test For Uvicorn
 # Load YOLO models
 model_plate = torch.hub.load('yolov5', 'custom', params.modelPlate_path, source='local', device=device, force_reload=True)
 model_char = torch.hub.load('yolov5', 'custom', params.modelCharX_path, source='local', device=device, force_reload=True)
+
+
 
 # RTSP or video source setup
 source = params.rtps if params.rtps else 0  # Use RTSP if defined; otherwise, default to webcam
