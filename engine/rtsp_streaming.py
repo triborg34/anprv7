@@ -9,6 +9,7 @@ import base64
 import queue
 import threading
 import websockets
+from ultralytics import YOLO
 from configParams import Parameters
 from database.db_entries_utils import db_entries_time
 
@@ -16,6 +17,8 @@ from database.db_entries_utils import db_entries_time
 
 logging.getLogger('torch').setLevel(logging.ERROR)
 warnings.filterwarnings("ignore", category=UserWarning)
+logging.getLogger('ultralytics').setLevel(logging.ERROR)
+
 params = Parameters()
 
 # WebSocket parameters
@@ -37,7 +40,9 @@ device = get_device()
 # Load YOLO models
 model_plate = torch.hub.load('yolov5', 'custom', params.modelPlate_path, source='local', device=device, force_reload=True)
 model_char = torch.hub.load('yolov5', 'custom', params.modelCharX_path, source='local', device=device, force_reload=True)
+model_arvand=YOLO(params.modelArvand_path,verbose=False)
 
+print(model_arvand.names)
 
 
 # RTSP or video source setup
@@ -117,27 +122,53 @@ async def transmit_frames(websocket, path=None):
 
             # Process frame for plate detection
             plate_results = model_plate(frame).pandas().xyxy[0]
-            for _, plate in plate_results.iterrows():
-                plate_conf = int(plate['confidence'] * 100)
-                if plate_conf >= params.plateConf:
-                    x_min, y_min, x_max, y_max = int(plate['xmin']), int(plate['ymin']), int(plate['xmax']), int(plate['ymax'])
-                    cropped_plate = frame[y_min:y_max, x_min:x_max]
-                    plate_text, char_conf_avg = detect_plate_chars(cropped_plate)
+            # plate_res=model_arvand(frame).pandas().xyxy[0]
+            # print(plate_res)
+            if not plate_results.empty:
 
-                    # Annotate frame with plate text
-                    cv2.putText(frame, f"Plate: {plate_text}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX,
-                                0.7, (0, 255, 0), 2, cv2.LINE_AA)
-                    plate_text.replace('Taxi','x')
-                    # Save plate details if valid
-                    if char_conf_avg >= 75 and len(plate_text) >= 8:
-                        db_entries_time(
-                            number=plate_text,
-                            charConfAvg=char_conf_avg,
-                            plateConfAvg=plate_conf,
-                            croppedPlate=cropped_plate,
-                            status="Active",
-                            frame=frame
-                        )
+            
+                for _, plate in plate_results.iterrows():
+                    plate_conf = int(plate['confidence'] * 100)
+                    if plate_conf >= int(params.plateConf):
+                        x_min, y_min, x_max, y_max = int(plate['xmin']), int(plate['ymin']), int(plate['xmax']), int(plate['ymax'])
+                        cropped_plate = frame[y_min:y_max, x_min:x_max]
+                        plate_text, char_conf_avg = detect_plate_chars(cropped_plate)
+
+                        # Annotate frame with plate text
+                        cv2.putText(frame, f"Plate: {plate_text}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                                    0.7, (0, 255, 0), 2, cv2.LINE_AA)
+                        plate_text.replace('Taxi','x')
+                        # Save plate details if valid
+                        if char_conf_avg >= 75 and len(plate_text) >= 8:
+                            db_entries_time(
+                                number=plate_text,
+                                charConfAvg=char_conf_avg,
+                                plateConfAvg=plate_conf,
+                                croppedPlate=cropped_plate,
+                                status="Active",
+                                frame=frame
+                            )
+            plate_arvand=model_arvand(frame,device=device)
+            model_arvand.to(device)
+            if  len(plate_arvand[0]) >0 :
+                for box in plate_arvand[0].boxes:
+                    arvand_conf=box.conf[0]
+                    if arvand_conf >= int(params.plateConf):
+                        x_min, y_min, x_max, y_max = int(map,box[0].xyxy[0][:4])
+                        cropped_plate = frame[y_min:y_max, x_min:x_max]
+                        plate_text, char_conf_avg = detect_plate_chars(cropped_plate)
+                        cv2.putText(frame, f"Plate: {plate_text}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                                    0.7, (0, 255, 0), 2, cv2.LINE_AA)
+
+                        if char_conf_avg >= 75 :
+                            db_entries_time(
+                                number=plate_text,
+                                charConfAvg=char_conf_avg,
+                                plateConfAvg=plate_conf,
+                                croppedPlate=cropped_plate,
+                                status="Active",
+                                frame=frame
+                            )
 
             # Encode frame as JPEG and send via WebSocket
             _, encoded = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 50])

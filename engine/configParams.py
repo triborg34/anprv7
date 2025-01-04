@@ -37,13 +37,13 @@ class Parameters:
         self.modelPlate_path = modelconfig["platemodel"]
         self.modelCharX_path = modelconfig["charmodel"]
         self.modelCar_path=modelconfig["carmodel"]
+        self.modelArvand_path=modelconfig['arvandmodel']
         defuiltConfig=config_object['DEFAULT']
         self.plateConf=defuiltConfig['plate_confidence']
         self.charConf=defuiltConfig['character_confidence']
         self.device=defuiltConfig['device']
         sourceConfig = config_object["SOURCEDETECT"]
-   
-        self.rtps = sourceConfig["rtps"]
+        self.rtps = [sourceConfig[key].strip() for key in sourceConfig if key.startswith("rtps")]
 
        
 

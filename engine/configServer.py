@@ -50,9 +50,10 @@ def update_config(request: ConfigUpdateRequest):
 @app.post("/cameras")
 def add_camera(request: CameraIPRequest):
     """Add a new camera IP."""
-    print(request.username)
+    print(request.isnotrstp)
     try:
-        if request.isnotrstp:
+        if not request.isnotrstp:
+            print("is not rt")
             rtspIp=f"{request.ip}"
         else:
             rtspIp=f"rtsp://{request.username}:{request.password}@{request.ip}:554/mainstream"
