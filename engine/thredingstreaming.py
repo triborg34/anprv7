@@ -41,6 +41,7 @@ class YOLOModels:
         self.model_plate = torch.hub.load('yolov5', 'custom', plate_model_path, source='local', device=device, force_reload=True)
         self.model_char = torch.hub.load('yolov5', 'custom', char_model_path, source='local', force_reload=True)
         self.model_arvand = YOLO(arvand_model_path, verbose=False).to(device)
+        
 
 models = YOLOModels(params.modelPlate_path, params.modelCharX_path, params.modelArvand_path)
 
@@ -108,6 +109,7 @@ async def transmit_frames(websocket, path):
                             # Annotate frame with plate text
                             cv2.putText(frame, f"Plate: {plate_text}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX,
                                         0.7, (0, 255, 0), 2, cv2.LINE_AA)
+                            cv2.rectangle(frame,(x_min,y_min),(x_max,y_max),(0,0,255),2)
                             plate_text.replace('Taxi','x')
                             # Save plate details if valid
                             if char_conf_avg >= 75 and len(plate_text) >= 8:
@@ -130,6 +132,7 @@ async def transmit_frames(websocket, path):
                             plate_text, char_conf_avg = detect_plate_chars(cropped_plate)
                             cv2.putText(frame, f"Plate: {plate_text}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX,
                                         0.7, (0, 255, 0), 2, cv2.LINE_AA)
+                            cv2.rectangle(frame,(x_min,x_max),(y_min,y_max),(51,103,53),2)
 
                             if char_conf_avg >= 75 :
                                 db_entries_time(
