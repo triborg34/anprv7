@@ -1,11 +1,15 @@
 import logging
 import cv2
+import warnings
 import torch
 import asyncio
 import base64
 import threading
 from queue import Queue
+import statistics
 from ultralytics import YOLO
+import websockets.http
+import websockets.uri
 from configParams import Parameters
 from database.db_entries_utils import db_entries_time
 import websockets
@@ -13,6 +17,9 @@ import websockets
 # Logging configuration
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("CCTV-Server")
+logging.getLogger('torch').setLevel(logging.ERROR)
+warnings.filterwarnings("ignore", category=UserWarning)
+logging.getLogger('ultralytics').setLevel(logging.ERROR)
 
 # Parameters
 params = Parameters()
@@ -24,7 +31,8 @@ device = torch.device(0 if torch.cuda.is_available() else "cpu")
 logger.info(f"Using {'CUDA' if torch.cuda.is_available() else 'CPU'} device.")
 
 # Frame Buffers: One buffer for each RTSP source
-frame_buffers = {source: Queue(maxsize=10) for source in params.rtps}
+frame_buffers = {f"/rt{i+1}": Queue(maxsize=10) for i, _ in enumerate(params.rtps)}
+global buffer_key 
 
 # YOLO Models
 class YOLOModels:
@@ -50,86 +58,127 @@ def frame_producer(source, buffer):
         buffer.put(frame)
 
 # Character Detection
-def detect_plate_chars(cropped_plate, model_char):
-    """Detect characters on the license plate."""
-    results = model_char(cropped_plate)
-    chars, confidences = [], []
-    for det in results.pandas().xyxy[0].iterrows():
-        conf = det[1]['confidence']
-        cls = int(det[1]['class'])
-        if conf > float(params.charConf) / 100:
-            chars.append(params.char_id_dict.get(str(cls), ''))
-            confidences.append(conf)
-    char_conf_avg = round(sum(confidences) / len(confidences) * 100) if confidences else 0
+def detect_plate_chars(cropped_plate):
+    chars, confidences, char_detected = [], [], []
+    results = models.model_char(cropped_plate)
+    detections = sorted(results.pred[0], key=lambda x: x[0])  # Sort by x-coordinate
+    for det in detections:
+        conf = det[4]
+        confidance=int(params.charConf)/100
+        if conf > confidance:
+            cls = int(det[5].item())
+            char = params.char_id_dict.get(str(cls), '')
+            chars.append(char)
+            confidences.append(conf.item())
+            char_detected.append(det.tolist())
+    char_conf_avg = round(statistics.mean(confidences) * 100) if confidences else 0
     return ''.join(chars), char_conf_avg
 
 # WebSocket Frame Transmitter
 async def transmit_frames(websocket, path):
-    logger.info("Client connected.")
+    print(path)
+    """Transmit frames for the specific WebSocket endpoint."""
+    logger.info(f"Client connected to {path}")
+    if path not in frame_buffers.keys():
+        logger.warning(f"Invalid path: {path}")
+        await websocket.close()
+        return
+
+    buffer = frame_buffers[path]
     try:
         while True:
-            # Iterate through buffers and fetch frames
-            for source, buffer in frame_buffers.items():
-                if not buffer.empty():
-                    frame = buffer.get()
+            if not buffer.empty():
+                frame = buffer.get()
 
-                    # Detect plates
-                    plate_results = models.model_plate(frame).pandas().xyxy[0]
+                # Detect plates
+            # Process frame for plate detection
+                plate_results = models.model_plate(frame).pandas().xyxy[0]
+                # plate_res=model_arvand(frame).pandas().xyxy[0]
+                # print(plate_res)
+                if not plate_results.empty:
+
+                
                     for _, plate in plate_results.iterrows():
-                        conf = int(plate['confidence'] * 100)
-                        if conf >= int(params.plateConf):
-                            x_min, y_min, x_max, y_max = map(int, [plate['xmin'], plate['ymin'], plate['xmax'], plate['ymax']])
+                        plate_conf = int(plate['confidence'] * 100)
+                        if plate_conf >= int(params.plateConf):
+                            x_min, y_min, x_max, y_max = int(plate['xmin']), int(plate['ymin']), int(plate['xmax']), int(plate['ymax'])
                             cropped_plate = frame[y_min:y_max, x_min:x_max]
-                            plate_text, char_conf_avg = detect_plate_chars(cropped_plate, models.model_char)
+                            plate_text, char_conf_avg = detect_plate_chars(cropped_plate)
 
+                            # Annotate frame with plate text
+                            cv2.putText(frame, f"Plate: {plate_text}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                                        0.7, (0, 255, 0), 2, cv2.LINE_AA)
+                            plate_text.replace('Taxi','x')
+                            # Save plate details if valid
                             if char_conf_avg >= 75 and len(plate_text) >= 8:
                                 db_entries_time(
                                     number=plate_text,
                                     charConfAvg=char_conf_avg,
-                                    plateConfAvg=conf,
+                                    plateConfAvg=plate_conf,
                                     croppedPlate=cropped_plate,
                                     status="Active",
                                     frame=frame
                                 )
-
-                    # YOLO Arvand Model
-                    arvand_results = models.model_arvand(frame)
-                    for box in arvand_results[0].boxes:
-                        conf = box.conf[0]
-                        if conf >= int(params.plateConf):
-                            x_min, y_min, x_max, y_max = map(int, box.xyxy[0][:4])
+                plate_arvand=models.model_arvand(frame,device=device)
+                models.model_arvand.to(device)
+                if  len(plate_arvand[0]) >0 :
+                    for box in plate_arvand[0].boxes:
+                        arvand_conf=box.conf[0]
+                        if arvand_conf >= int(params.plateConf):
+                            x_min, y_min, x_max, y_max = int(map,box[0].xyxy[0][:4])
                             cropped_plate = frame[y_min:y_max, x_min:x_max]
-                            plate_text, char_conf_avg = detect_plate_chars(cropped_plate, models.model_char)
+                            plate_text, char_conf_avg = detect_plate_chars(cropped_plate)
+                            cv2.putText(frame, f"Plate: {plate_text}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                                        0.7, (0, 255, 0), 2, cv2.LINE_AA)
 
-                            if char_conf_avg >= 75:
+                            if char_conf_avg >= 75 :
                                 db_entries_time(
                                     number=plate_text,
                                     charConfAvg=char_conf_avg,
-                                    plateConfAvg=conf,
+                                    plateConfAvg=plate_conf,
                                     croppedPlate=cropped_plate,
                                     status="Active",
                                     frame=frame
                                 )
 
-                    # Encode frame and send
-                    _, encoded = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 50])
-                    await websocket.send(base64.b64encode(encoded).decode('utf-8'))
-            await asyncio.sleep(0.1)  # Prevent CPU overutilization
+                # Encode frame as JPEG and send via WebSocket
+                _, encoded = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 50])
+                data = base64.b64encode(encoded).decode('utf-8')
+                await websocket.send(data)
+            else:
+                await asyncio.sleep(0.1)  # Wait for new frames
     except websockets.ConnectionClosed:
-        logger.info("Client disconnected.")
+        logger.info(f"Client disconnected from {path}")
 
 # WebSocket Server
+
+
+async def ws_handler(websocket):
+    """Handle WebSocket connections."""
+    path=websocket.request.path
+
+
+    await transmit_frames(websocket, path)
+
+
 async def websocket_server():
     """Start the WebSocket server."""
     logger.info(f"Starting WebSocket server at ws://{host}:{port}")
-    async with websockets.serve(transmit_frames, host, port):
-        await asyncio.Future()  # Run forever
-
+    
+    server = await websockets.serve(
+        ws_handler,
+        host,
+        port,
+    )
+    
+    await asyncio.Future()  # run forever
 # Main
 if __name__ == "__main__":
     # Start frame producer threads for each RTSP source
-    for source, buffer in frame_buffers.items():
-        threading.Thread(target=frame_producer, args=(source, buffer), daemon=True).start()
+    for i, source in enumerate(params.rtps):
+        buffer_key = f"/rt{i+1}"
+        
+        threading.Thread(target=frame_producer, args=(source, frame_buffers[buffer_key]), daemon=True).start()
 
     # Run WebSocket server
     asyncio.run(websocket_server())
