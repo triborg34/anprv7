@@ -47,7 +47,7 @@ print(model_arvand.names)
 
 # RTSP or video source setup
 source = params.rtps if params.rtps else 0  # Use RTSP if defined; otherwise, default to webcam
-cap = cv2.VideoCapture(source)
+cap = cv2.VideoCapture('rtsp://admin:admin@192.168.1.89:554/mainstream')
 
 # Initialize variables for buffer logic
 buffer_logic = str(device) == "cpu"  # Use buffer only when running on CPU
