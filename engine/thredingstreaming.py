@@ -93,7 +93,7 @@ async def transmit_frames(websocket, path):
 
                 # Detect plates
             # Process frame for plate detection
-                car_res=models.carmodel(frame,device=device)
+                car_res=models.carmodel(frame,device=device,classes=[2])
                 if len(car_res[0])>0:
                     for box in car_res[0].boxes:
                         
