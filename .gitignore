@@ -18,3 +18,7 @@ engine/yolov5/CharsYolo_saved_model/fingerprint.pb
 engine/yolov5/CharsYolo_saved_model/saved_model.pb
 engine/yolov5/CharsYolo_saved_model/variables/variables.data-00000-of-00001
 engine/yolov5/CharsYolo_saved_model/variables/variables.index
+engine/00.jpg
+engine/22.png
+engine/319.jpg
+engine/cropped.jpg
