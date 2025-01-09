@@ -26,6 +26,7 @@ params = Parameters()
 port = 5000
 host = '127.0.0.1'
 
+
 # Device setup
 device = torch.device(0 if torch.cuda.is_available() else "cpu")
 logger.info(f"Using {'CUDA' if torch.cuda.is_available() else 'CPU'} device.")
@@ -65,7 +66,8 @@ def detect_plate_chars(cropped_plate):
     detections = sorted(results.pred[0], key=lambda x: x[0])  # Sort by x-coordinate
     for det in detections:
         conf = det[4]
-        confidance=int(params.charConf)/100
+        confidance=float(params.charConf)
+        
         if conf > confidance:
             cls = int(det[5].item())
             char = params.char_id_dict.get(str(cls), '')
@@ -121,6 +123,7 @@ async def transmit_frames(websocket, path):
                                                 0.7, (0, 255, 128), 2, cv2.LINE_AA)
                                     cv2.rectangle(cropped_car,(x_min,y_min),(x_max,y_max),(0,0,255),2)
                                     plate_text.replace('Taxi','x')
+                               
                                     # Save plate details if valid
                                     if char_conf_avg >= 75 and len(plate_text) >= 8:
                                         db_entries_time(
@@ -130,28 +133,32 @@ async def transmit_frames(websocket, path):
                                             croppedPlate=cropped_plate,
                                             status="Active",
                                             frame=frame
+                                            ,isarvand=0,
+                                            rtpath=path
                                         )
                         plate_arvand=models.model_arvand(frame,device=device)
                         models.model_arvand.to(device)
                         if  len(plate_arvand[0]) >0 :
                             for box in plate_arvand[0].boxes:
                                 arvand_conf=box.conf[0]
-                                if arvand_conf >= int(params.plateConf):
+                                if arvand_conf >= 70:
                                     x_min, y_min, x_max, y_max = int(map,box[0].xyxy[0][:4])
-                                    cropped_plate = frame[y_min:y_max, x_min:x_max]
+                                    cropped_plate = cropped_car[y_min:y_max, x_min:x_max]
                                     plate_text, char_conf_avg = detect_plate_chars(cropped_plate)
-                                    cv2.putText(frame, f"Plate: {plate_text}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                                    cv2.putText(cropped_car, f"Plate: {plate_text}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX,
                                                 0.7, (0, 255, 0), 2, cv2.LINE_AA)
-                                    cv2.rectangle(frame,(x_min,x_max),(y_min,y_max),(51,103,53),2)
-
-                                    if char_conf_avg >= 75 :
+                                    cv2.rectangle(cropped_car,(x_min,x_max),(y_min,y_max),(51,103,53),2)
+                                    
+                                    if char_conf_avg >= 60 :
                                         db_entries_time(
                                             number=plate_text,
                                             charConfAvg=char_conf_avg,
                                             plateConfAvg=plate_conf,
                                             croppedPlate=cropped_plate,
                                             status="Active",
-                                            frame=frame
+                                            frame=frame,
+                                            isarvand=1,
+                                            rtpath=path
                                         )
 
                         # Encode frame as JPEG and send via WebSocket

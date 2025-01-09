@@ -81,7 +81,7 @@ def add_camera_ip(ip, file_path=CONFIG_FILE):
     camera_keys = [key for key in config_parser["SOURCEDETECT"].keys() if key.startswith("rtps")]
     next_camera_num = len(camera_keys) + 1
     # new_key = f"camera_{next_camera_num}_ip"
-    new_key = f"rtps"
+    new_key = f"rtps{next_camera_num}"
 
     # Add the new camera IP
     config_parser["SOURCEDETECT"][new_key] = ip

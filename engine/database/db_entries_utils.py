@@ -24,18 +24,22 @@ def create_database_if_not_exists(db_path):
                             plateNum TEXT,
                             status TEXT,
                             imgpath TEXT,
-                            scrnpath TEXT
+                            scrnpath TEXT,
+                          	isarvand  INTEGER,
+                            rtpath TEXT
+
+
                           )''')
 
         # Create `entries` table for `insertEntries` function
-        cursor.execute('''CREATE TABLE IF NOT EXISTS entries (
-                            platePercent REAL,
-                            charPercent REAL,
-                            eDate TEXT,
-                            eTime TEXT,
-                            plateNum TEXT PRIMARY KEY,
-                            status TEXT
-                          )''')
+        # cursor.execute('''CREATE TABLE IF NOT EXISTS entries (
+        #                     platePercent REAL,
+        #                     charPercent REAL,
+        #                     eDate TEXT,
+        #                     eTime TEXT,
+        #                     plateNum TEXT PRIMARY KEY,
+        #                     status TEXT
+        #                   )''')
 
         # Commit changes and close connection
         conn.commit()
@@ -56,44 +60,47 @@ db_path = './database/entrieses.db'
 create_database_if_not_exists(db_path=db_path)
 
 
-def insterMyentry(platePercent, charPercent, eDate, eTime, plateNum, status, imagePath,scrnpath):
+def insterMyentry(platePercent, charPercent, eDate, eTime, plateNum, status, imagePath,scrnpath,isarvand,rtpath):
     sqlconnect = sqlite3.connect('./database/entrieses.db')
     sqlcuurser = sqlconnect.cursor()
-    excute = 'INSERT INTO entry VALUES (:platePercent, :charPercent, :eDate, :eTime, :plateNum, :status , :imgpath,:scrnpath)'
-    sqlcuurser.execute(excute, (platePercent, charPercent, eDate, eTime, plateNum, status, imagePath,scrnpath))
+    excute = 'INSERT INTO entry VALUES (:platePercent, :charPercent, :eDate, :eTime, :plateNum, :status , :imgpath,:scrnpath,:isarvand,:rtpath)'
+    sqlcuurser.execute(excute, (platePercent, charPercent, eDate, eTime, plateNum, status, imagePath,scrnpath,isarvand,rtpath))
 
     sqlconnect.commit()
     sqlcuurser.close()
 
-def insertEntries(entry):
-    sqlConnect = sqlite3.connect(dbEntries)
-    sqlCursor = sqlConnect.cursor()
+# def insertEntries(entry):
+#     sqlConnect = sqlite3.connect(dbEntries)
+#     sqlCursor = sqlConnect.cursor()
 
-    sqlCursor.execute(
-        "INSERT OR IGNORE INTO entries VALUES (:platePercent, :charPercent, :eDate, :eTime, :plateNum, :status)",
-        vars(entry))
+#     sqlCursor.execute(
+#         "INSERT OR IGNORE INTO entries VALUES (:platePercent, :charPercent, :eDate, :eTime, :plateNum, :status)",
+#         vars(entry))
 
-    sqlConnect.commit()
-    sqlConnect.close()
+#     sqlConnect.commit()
+#     sqlConnect.close()
 
-def dbGetPlateLatestEntry(plateNumber):
-    sqlConnect = sqlite3.connect(db_path)
-    sqlCursor = sqlConnect.cursor()
+# def dbGetPlateLatestEntry(plateNumber):
+#     sqlConnect = sqlite3.connect(db_path)
+#     sqlCursor = sqlConnect.cursor()
 
-    FullEntriesSQL = f"""SELECT * FROM entries WHERE plateNum='{plateNumber}' ORDER BY eDate DESC LIMIT 1"""
-    FullEntries = sqlCursor.execute(FullEntriesSQL).fetchall()
-    # print(FullEntries[0][4]==plateNumber)
+#     FullEntriesSQL = f"""SELECT * FROM entry WHERE plateNum='{plateNumber}' ORDER BY eDate DESC LIMIT 1"""
+#     FullEntries = sqlCursor.execute(FullEntriesSQL).fetchall()
+#     # print(FullEntries[0][4]==plateNumber)
 
-    if len(FullEntries) != 0:
-        FullData = dict(zip([c[0] for c in sqlCursor.description], FullEntries[0]))
-        sqlConnect.commit()
-        sqlConnect.close()
-        return Entries(**FullData)
-    return None
+#     if len(FullEntries) != 0:
+#         FullData = dict(zip([c[0] for c in sqlCursor.description], FullEntries[0]))
+#         sqlConnect.commit()
+#         sqlConnect.close()
+#         return Entries(**FullData)
+#     return None
 
 similarityTemp = ''
 
-def db_entries_time(number, charConfAvg, plateConfAvg, croppedPlate, status, frame=None):
+def db_entries_time(number, charConfAvg, plateConfAvg, croppedPlate, status, frame,isarvand,rtpath):
+    
+    
+    
     global similarityTemp
     isSimilar = check_similarity_threshold(similarityTemp, number)
     
@@ -107,10 +114,10 @@ def db_entries_time(number, charConfAvg, plateConfAvg, croppedPlate, status, fra
       
 
         # Database operations for plate detection 
-        result = dbGetPlateLatestEntry(number)
+        result =""
         if result is not None and number != '':
-            strTime = result.getTime()
-            strDate = result.getDate()
+            strTime = time.strftime("%H:%M:%S")
+            strDate = time.strftime("%Y-%m-%d")
             if timeDifference(strTime, strDate):
                 display_time = timeNow.strftime("%H:%M:%S")
                 display_date = timeNow.strftime("%Y-%m-%d")
@@ -124,25 +131,26 @@ def db_entries_time(number, charConfAvg, plateConfAvg, croppedPlate, status, fra
                 plateImgName2 = f'output/cropedplate/{number}_{datetime.datetime.now().strftime("%m-%d")}.jpg'
                 cv2.imwrite(plateImgName2, croppedPlate)
 
-                entries = Entries(plateConfAvg, charConfAvg, display_date, display_time, number, status)
-                insterMyentry(plateConfAvg, charConfAvg, display_date, display_time, number, status, plateImgName2,screenshot_path)
+               
+                insterMyentry(plateConfAvg, charConfAvg, display_date, display_time, number, status, plateImgName2,screenshot_path,isarvand,rtpath)
                 # insertEntries(entries)
-        else:
-            if number != '':
-                display_time = time.strftime("%H:%M:%S")
-                display_date = time.strftime("%Y-%m-%d")
+        # else:
+        #     if number != '':
+        #         print("Here ")
+        #         display_time = time.strftime("%H:%M:%S")
+        #         display_date = time.strftime("%Y-%m-%d")
                 
-                screenshot_path = f"output/screenshot/{number}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
-                if frame is not None:
-                         cv2.imwrite(screenshot_path, frame)
-                         print(f"Screenshot saved to {screenshot_path} for plate {number} with character confidence {charConfAvg}%.")
+        #         screenshot_path = f"output/screenshot/{number}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
+        #         if frame is not None:
+        #                  cv2.imwrite(screenshot_path, frame)
+        #                  print(f"Screenshot saved to {screenshot_path} for plate {number} with character confidence {charConfAvg}%.")
 
-                plateImgName2 = f'output/cropedplate/{number}_{datetime.datetime.now().strftime("%m-%d")}.jpg'
-                cv2.imwrite(plateImgName2, croppedPlate)
+        #         plateImgName2 = f'output/cropedplate/{number}_{datetime.datetime.now().strftime("%m-%d")}.jpg'
+        #         cv2.imwrite(plateImgName2, croppedPlate)
 
-                entries = Entries(plateConfAvg, charConfAvg, display_date, display_time, number, status)
-                # insertEntries(entries)
-                insterMyentry(plateConfAvg, charConfAvg, display_date, display_time, number, status, plateImgName2,screenshot_path)
+          
+        #         # insertEntries(entries)
+        #         insterMyentry(plateConfAvg, charConfAvg, display_date, display_time, number, status, plateImgName2,screenshot_path,isarvand,rtpath)
 
 def getFieldNames(fieldsList):
     fieldNamesOutput = []
