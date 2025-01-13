@@ -28,7 +28,7 @@ host = '127.0.0.1'
 
 
 # Device setup
-device = torch.device(0 if torch.cuda.is_available() else "cpu")
+device = torch.device(0 if torch.cuda.is_available()  else "cpu")
 logger.info(f"Using {'CUDA' if torch.cuda.is_available() else 'CPU'} device.")
 
 # Frame Buffers: One buffer for each RTSP source
@@ -66,9 +66,9 @@ def detect_plate_chars(cropped_plate):
     detections = sorted(results.pred[0], key=lambda x: x[0])  # Sort by x-coordinate
     for det in detections:
         conf = det[4]
-        confidance=float(params.charConf)
         
-        if conf > confidance:
+        
+        if conf > 0.5:
             cls = int(det[5].item())
             char = params.char_id_dict.get(str(cls), '')
             chars.append(char)
@@ -123,9 +123,11 @@ async def transmit_frames(websocket, path):
                                                 0.7, (0, 255, 128), 2, cv2.LINE_AA)
                                     cv2.rectangle(cropped_car,(x_min,y_min),(x_max,y_max),(0,0,255),2)
                                     plate_text.replace('Taxi','x')
+                                    confidance=float(params.charConf)*100
+                                    
                                
                                     # Save plate details if valid
-                                    if char_conf_avg >= 75 and len(plate_text) >= 8:
+                                    if char_conf_avg >= confidance and len(plate_text) >= 8:
                                         db_entries_time(
                                             number=plate_text,
                                             charConfAvg=char_conf_avg,
@@ -133,7 +135,7 @@ async def transmit_frames(websocket, path):
                                             croppedPlate=cropped_plate,
                                             status="Active",
                                             frame=frame
-                                            ,isarvand=0,
+                                            ,isarvand='notarvand',
                                             rtpath=path
                                         )
                         plate_arvand=models.model_arvand(frame,device=device)
@@ -157,7 +159,7 @@ async def transmit_frames(websocket, path):
                                             croppedPlate=cropped_plate,
                                             status="Active",
                                             frame=frame,
-                                            isarvand=1,
+                                            isarvand='arvand',
                                             rtpath=path
                                         )
 

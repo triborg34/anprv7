@@ -25,7 +25,7 @@ def create_database_if_not_exists(db_path):
                             status TEXT,
                             imgpath TEXT,
                             scrnpath TEXT,
-                          	isarvand  INTEGER,
+                          	isarvand  TEXT,
                             rtpath TEXT
 
 
