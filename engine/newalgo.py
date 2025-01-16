@@ -1,4 +1,5 @@
 import logging
+import time
 import cv2
 import warnings
 import torch
@@ -104,64 +105,76 @@ async def transmit_frames(websocket, path):
                         
 
 
-
+           
                         plate_results = models.model_plate(cropped_car).pandas().xyxy[0]
+                        
                         # plate_res=model_arvand(frame).pandas().xyxy[0]
                         # print(plate_res)
-                        if not plate_results.empty:
-
                         
-                            for _, plate in plate_results.iterrows():
-                                plate_conf = int(plate['confidence'] * 100)
-                                if plate_conf >= int(params.plateConf):
-                                    x_min, y_min, x_max, y_max = int(plate['xmin']), int(plate['ymin']), int(plate['xmax']), int(plate['ymax'])
-                                    cropped_plate = cropped_car[y_min:y_max, x_min:x_max]
-                                    plate_text, char_conf_avg = detect_plate_chars(cropped_plate)
+                        if not plate_results.empty:
+                                
+                                
+                            
+                                for _, plate in plate_results.iterrows():
+                                    plate_conf = int(plate['confidence'] * 100)
+                                    if plate_conf >= int(params.plateConf):
+                                        x_min, y_min, x_max, y_max = int(plate['xmin']), int(plate['ymin']), int(plate['xmax']), int(plate['ymax'])
+                                        cropped_plate = cropped_car[y_min:y_max, x_min:x_max]
+                                        plate_text, char_conf_avg = detect_plate_chars(cropped_plate)
 
-                                    # Annotate frame with plate text
-                                    cv2.putText(cropped_car, f"Plate: {plate_text}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX,
-                                                0.7, (0, 255, 128), 2, cv2.LINE_AA)
-                                    cv2.rectangle(cropped_car,(x_min,y_min),(x_max,y_max),(0,0,255),2)
-                                    plate_text.replace('Taxi','x')
-                                    confidance=float(params.charConf)*100
-                                    
-                               
-                                    # Save plate details if valid
-                                    if char_conf_avg >= confidance and len(plate_text) >= 8:
-                                        db_entries_time(
-                                            number=plate_text,
-                                            charConfAvg=char_conf_avg,
-                                            plateConfAvg=plate_conf,
-                                            croppedPlate=cropped_plate,
-                                            status="Active",
-                                            frame=frame
-                                            ,isarvand='notarvand',
-                                            rtpath=path
-                                        )
-                        plate_arvand=models.model_arvand(frame,device=device)
-                        models.model_arvand.to(device)
-                        if  len(plate_arvand[0]) >0 :
-                            for box in plate_arvand[0].boxes:
-                                arvand_conf=box.conf[0]
-                                if arvand_conf >= 70:
-                                    x_min, y_min, x_max, y_max = int(map,box[0].xyxy[0][:4])
-                                    cropped_plate = cropped_car[y_min:y_max, x_min:x_max]
-                                    plate_text, char_conf_avg = detect_plate_chars(cropped_plate)
-                                    cv2.putText(cropped_car, f"Plate: {plate_text}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX,
-                                                0.7, (0, 255, 0), 2, cv2.LINE_AA)
-                                    cv2.rectangle(cropped_car,(x_min,x_max),(y_min,y_max),(51,103,53),2)
-                                    
-                                    if char_conf_avg >= 60 :
-                                        db_entries_time(
-                                            number=plate_text,
-                                            charConfAvg=char_conf_avg,
-                                            plateConfAvg=plate_conf,
-                                            croppedPlate=cropped_plate,
-                                            status="Active",
-                                            frame=frame,
-                                            isarvand='arvand',
-                                            rtpath=path
-                                        )
+                                        # Annotate frame with plate text
+                                        cv2.putText(cropped_car, f"Plate: {plate_text}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                                                    0.7, (0, 255, 128), 2, cv2.LINE_AA)
+                                        cv2.rectangle(cropped_car,(x_min,y_min),(x_max,y_max),(0,0,255),2)
+                                        plate_text.replace('Taxi','x')
+                                        confidance=float(params.charConf)*100
+                                        
+                                
+                                        # Save plate details if valid
+                                        if char_conf_avg >= confidance and len(plate_text) >= 8:
+                                            db_entries_time(
+                                                number=plate_text,
+                                                charConfAvg=char_conf_avg,
+                                                plateConfAvg=plate_conf,
+                                                croppedPlate=cropped_plate,
+                                                status="Active",
+                                                frame=frame
+                                                ,isarvand='notarvand',
+                                                rtpath=path
+                                            )
+                        
+                        
+                        else:                
+                            plate_arvand=models.model_arvand(cropped_car,device=device)
+                            models.model_arvand.to(device)
+                            
+                            if  len(plate_arvand[0]) >0 :
+                                
+                                for box in plate_arvand[0].boxes:
+                                    arvand_conf=int(box.conf[0]*100)
+                                    if arvand_conf >= int(params.plateConf):
+                                        xMin, yMin, xMax, yMax = map(int,box[0].xyxy[0][:4])
+                                        d=yMax-yMin
+                                        tempyMax=yMax-int(d/2)
+                                        
+                                        cropped_plate_arvand = cropped_car[yMin:yMax, xMin:xMax]
+                                        cropped_plate_detected_arvand = cropped_car[yMin:tempyMax, xMin:xMax]
+                                        plate_text, char_conf_avg = detect_plate_chars(cropped_plate_detected_arvand)
+                                        cv2.putText(cropped_car, f"Plate: {plate_text}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                                                    0.7, (0, 255, 255), 2, cv2.LINE_AA)
+                                        cv2.rectangle(cropped_car,(x_min,x_max),(y_min,y_max),(51,103,53),2)
+                                        
+                                        if char_conf_avg >= 60 :
+                                            db_entries_time(
+                                                number=plate_text,
+                                                charConfAvg=char_conf_avg,
+                                                plateConfAvg=plate_conf,
+                                                croppedPlate=cropped_plate_arvand,
+                                                status="Active",
+                                                frame=frame,
+                                                isarvand='arvand',
+                                                rtpath=path
+                                            )
 
                         # Encode frame as JPEG and send via WebSocket
                 _, encoded = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 50])
