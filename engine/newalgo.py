@@ -159,16 +159,16 @@ async def transmit_frames(websocket, path):
                                         
                                         cropped_plate_arvand = cropped_car[yMin:yMax, xMin:xMax]
                                         cropped_plate_detected_arvand = cropped_car[yMin:tempyMax, xMin:xMax]
-                                        plate_text, char_conf_avg = detect_plate_chars(cropped_plate_detected_arvand)
-                                        cv2.putText(cropped_car, f"Plate: {plate_text}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                                        plate_text_arvand, char_conf_avg_arvand = detect_plate_chars(cropped_plate_detected_arvand)
+                                        cv2.putText(cropped_car, f"Plate: {plate_text_arvand}", (xMin, yMin - 10), cv2.FONT_HERSHEY_SIMPLEX,
                                                     0.7, (0, 255, 255), 2, cv2.LINE_AA)
-                                        cv2.rectangle(cropped_car,(x_min,x_max),(y_min,y_max),(51,103,53),2)
-                                        
-                                        if char_conf_avg >= 60 :
+                                        cv2.rectangle(cropped_car,(xMin,yMin),(xMax,yMax),(51,103,53),2)
+                                        confidance_arvand=float(params.charConf)*100
+                                        if char_conf_avg_arvand >= confidance_arvand and len(plate_text_arvand) >=5 :
                                             db_entries_time(
-                                                number=plate_text,
-                                                charConfAvg=char_conf_avg,
-                                                plateConfAvg=plate_conf,
+                                                number=plate_text_arvand,
+                                                charConfAvg=char_conf_avg_arvand,
+                                                plateConfAvg=arvand_conf,
                                                 croppedPlate=cropped_plate_arvand,
                                                 status="Active",
                                                 frame=frame,
