@@ -2,12 +2,13 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from config_manager import initialize_config, save_or_update_config, load_config, add_camera_ip
 import uvicorn
-
+from TcpConnector import TcpConnector
 # Initialize the configuration file
 initialize_config()
 #uvicorn configServer:app --reload --host 0.0.0.0 --port 8000
 # FastAPI app
 app = FastAPI()
+connection = TcpConnector()
 
 # Pydantic model for updating configurations
 class ConfigUpdateRequest(BaseModel):
@@ -22,6 +23,12 @@ class CameraIPRequest(BaseModel):
     password:str
     isnotrstp:bool
 
+
+class Relay(BaseModel):
+    isconnect:bool
+    
+
+    
 
 @app.get("/config")
 def get_config():
@@ -47,6 +54,8 @@ def update_config(request: ConfigUpdateRequest):
 
 
 
+
+
 @app.post("/cameras")
 def add_camera(request: CameraIPRequest):
     """Add a new camera IP."""
@@ -64,7 +73,68 @@ def add_camera(request: CameraIPRequest):
 
 
 
+@app.post("/iprelay")
+def connectrelay(request:Relay,ip,port):
+    
+    
+    connection.setConnectionProperties(f"{ip}", int(port))
+    if(request.isconnect):
+         #on
+        if(connection.connectToServer()):
+              
+                return{"massage":"connect"}
+        else:
+                
+                return{"massage":"problem connect"}
+    else:
+        if(connection.closeConnection()):
+            return{"massage":"disconnect"}
+        else:
+            return{"massage":"problem dissconnect"}
 
-print(__name__)
+        
+@app.get("/iprelay")
+def onOff(onOff,relay):
+    #on
+    if(onOff=="true"):
+        if(relay==int(relay)):
+            data = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x01\x00\x01\x01\x01\x00\x00\x00\x00\x00\x03\x01\x01\x00' #relay 1
+            if (connection.sendPacket(bData=data)):
+                return {'massage': connection.receivePacket(23, 2)}
+            else:
+                return {"massage":f"problem : {connection.receivePacket(23, 2)}"}
+        else:
+            data = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x01\x00\x01\x01\x01\x00\x00\x00\x00\x00\x03\x02\x01\x00' #relay 2
+            if (connection.sendPacket(bData=data)):
+                return {'massage': connection.receivePacket(23, 2)}
+            else:
+                return {"massage":f"problem : {connection.receivePacket(23, 2)}"}
+            ########################
+            #of
+    else:
+        if(relay==int(relay)):
+            data = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x01\x00\x01\x01\x01\x00\x00\x00\x00\x00\x03\x01\x00\x00' #relay 1
+            if (connection.sendPacket(bData=data)):
+                return {'massage': connection.receivePacket(23, 2)}
+            else:
+                return {"massage":f"problem : {connection.receivePacket(23, 2)}"}
+        else:
+            data = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x01\x00\x01\x01\x01\x00\x00\x00\x00\x00\x03\x02\x00\x00' #relay 2
+            if (connection.sendPacket(bData=data)):
+                return {'massage': connection.receivePacket(23, 2)}
+            else:
+                return {"massage":f"problem : {connection.receivePacket(23, 2)}"}
+            
+        
+                
+                
+            
+    
+    
+    
+
+
+
+
 if __name__ == "__main__":
     uvicorn.run("configServer:app", host="127.0.0.1", port=8000, log_level="info")
