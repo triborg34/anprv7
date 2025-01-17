@@ -3,12 +3,14 @@ from pydantic import BaseModel
 from config_manager import initialize_config, save_or_update_config, load_config, add_camera_ip
 import uvicorn
 from TcpConnector import TcpConnector
+from configParams import Parameters
 # Initialize the configuration file
 initialize_config()
 #uvicorn configServer:app --reload --host 0.0.0.0 --port 8000
 # FastAPI app
 app = FastAPI()
 connection = TcpConnector()
+params=Parameters()
 
 # Pydantic model for updating configurations
 class ConfigUpdateRequest(BaseModel):
@@ -137,4 +139,4 @@ def onOff(onOff,relay):
 
 
 if __name__ == "__main__":
-    uvicorn.run("configServer:app", host="127.0.0.1", port=8000, log_level="info")
+    uvicorn.run("configServer:app", host="127.0.0.1", port=params.serverport, log_level="info")

@@ -42,6 +42,8 @@ class Parameters:
         self.plateConf=defuiltConfig['plate_confidence']
         self.charConf=defuiltConfig['character_confidence']
         self.device=defuiltConfig['device']
+        self.socketport=defuiltConfig['socketport']
+        self.serverport=defuiltConfig['serverport']
         sourceConfig = config_object["SOURCEDETECT"]
         self.rtps = [sourceConfig[key].strip() for key in sourceConfig if key.startswith("rtps")]
 
