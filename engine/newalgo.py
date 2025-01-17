@@ -24,7 +24,7 @@ logging.getLogger('ultralytics').setLevel(logging.ERROR)
 
 # Parameters
 params = Parameters()
-port = params.socketport
+port = int(params.socketport)
 host = '127.0.0.1'
 
 

@@ -139,4 +139,4 @@ def onOff(onOff,relay):
 
 
 if __name__ == "__main__":
-    uvicorn.run("configServer:app", host="127.0.0.1", port=params.serverport, log_level="info")
+    uvicorn.run("configServer:app", host="127.0.0.1", port=int(params.serverport), log_level="info")
