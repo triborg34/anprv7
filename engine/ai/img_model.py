@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageEnhance
 from PIL.ImageQt import ImageQt
-from PySide6.QtGui import QPixmap
+
 
 
 def sharpen_new(img):
@@ -305,19 +305,19 @@ def to_img_pil(imgOpenCV):
     return Image.fromarray(cv2.cvtColor(imgOpenCV, cv2.COLOR_BGR2RGB));
 
 
-def convert_cv_image_to_qt_image(self, cv_img):
-    """
-      Convert an OpenCV image to a Qt image.
+# def convert_cv_image_to_qt_image(self, cv_img):
+#     """
+#       Convert an OpenCV image to a Qt image.
 
-      Parameters:
-      - cv_img (np.ndarray): The OpenCV image.
+#       Parameters:
+#       - cv_img (np.ndarray): The OpenCV image.
 
-      Returns:
-      - QPixmap: The Qt image.
-      """
-    rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
-    PIL_image = Image.fromarray(rgb_image).convert('RGB')
-    return QPixmap.fromImage(ImageQt(PIL_image))
+#       Returns:
+#       - QPixmap: The Qt image.
+#       """
+#     rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
+#     PIL_image = Image.fromarray(rgb_image).convert('RGB')
+#     return QPixmap.fromImage(ImageQt(PIL_image))
 
 
 def controller(img, brightness=250, contrast=150):
