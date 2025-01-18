@@ -29,6 +29,13 @@ class CameraIPRequest(BaseModel):
 class Relay(BaseModel):
     isconnect:bool
     
+    
+class EmailClass(BaseModel):
+    plateNumber:str
+    eDate:str
+    eTime:str
+    
+    
 
     
 
@@ -130,10 +137,81 @@ def onOff(onOff,relay):
         
                 
                 
+
+def emailHandler(email,plateNumber,edate,etime):
+    
+
+
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    # Gmail SMTP server settings
+    SMTP_SERVER = "smtp.gmail.com"
+    SMTP_PORT = 587
+
+    # Sender's email credentials
+    SENDER_EMAIL = "amnafarin4@gmail.com"
+    SENDER_PASSWORD = "vioz mxiw nedg rybh"
+
+    # Recipient email
+    RECIPIENT_EMAIL = email
+
+    # Email content
+    subject = f"{edate} شناسایی پلاک در تاریخ "
+    body = f""" 
+    پلاک:{plateNumber}
+    تاریخ:{edate}
+    زمان:{etime}
+     """
+
+    # Create the email message
+    msg = MIMEMultipart()
+    msg["From"] = SENDER_EMAIL
+    msg["To"] = RECIPIENT_EMAIL
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        # Connect to the SMTP server
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()  # Upgrade the connection to secure
+        server.login(SENDER_EMAIL, SENDER_PASSWORD)  # Log in to the server
+
+        # Send the email
+        server.sendmail(SENDER_EMAIL, RECIPIENT_EMAIL, msg.as_string())
+        print("Email sent successfully!")
+
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+
+    finally:
+        server.quit()  # Close the connection
+
+    #vioz mxiw nedg rybh
+
             
     
+@app.post('/email')
+def sendEmail(request:EmailClass,email):
+    try:
+        
+        emailHandler(email,request.plateNumber,request.eDate,request.eTime)
+        return {"massage":"email send Apporved"}
+    except:
+        return{"massage":"Failed"}
+    
+
     
     
+
+
+        
+    
+
+
+
+
 
 
 
