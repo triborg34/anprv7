@@ -1,8 +1,8 @@
 import configparser
 import os
 
-CONFIG_FILE = "../engine/config.ini"
-file_Path='../engine/config.ini'
+CONFIG_FILE = "config.ini"
+file_Path='config.ini'
 
 def initialize_config():
     """Initialize the config file with default values if it doesn't exist."""
