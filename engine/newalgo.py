@@ -46,6 +46,7 @@ class YOLOModels:
         self.carmodel=YOLO('model/yolo11n.pt',verbose=False).to(device)
 
 models = YOLOModels(params.modelPlate_path, params.modelCharX_path, params.modelArvand_path)
+print('start server')
 
 # Frame Producer
 def frame_producer(source, buffer):
@@ -339,6 +340,7 @@ async def ws_handler(websocket):
 async def websocket_server():
     """Start the WebSocket server."""
     logger.info(f"Starting WebSocket server at ws://{host}:{port}")
+    print(f'start websocket server at ws://{host}:{port}')
     
     server = await websockets.serve(
         ws_handler,
