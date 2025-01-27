@@ -1,5 +1,5 @@
 import logging
-import time
+import numpy as np
 import cv2
 import warnings
 import torch
@@ -59,6 +59,101 @@ def frame_producer(source, buffer):
         if buffer.full():
             buffer.get()  # Remove oldest frame if buffer is full
         buffer.put(frame)
+
+
+#correcting angles
+def correct_perspective(image, scale_factor):
+    try:
+
+        # پیشپردازش
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        gray = cv2.GaussianBlur(gray, (7,7), 0)
+        gray = cv2.medianBlur(gray, 3)
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+        gray = clahe.apply(gray)
+        
+        # تشخیص لبه
+        edges = cv2.Canny(gray, 30, 150)
+        
+        # تشخیص خطوط
+        lines = cv2.HoughLinesP(edges, 
+                               rho=1, 
+                               theta=np.pi/180, 
+                               threshold=30, 
+                               minLineLength=20, 
+                               maxLineGap=5)
+        
+        if lines is None:
+            return image, (0,0,0,0)
+
+        # محاسبه زاویه
+        angles = []
+        for line in lines:
+            x1_l, y1_l, x2_l, y2_l = line[0]
+            dx = x2_l - x1_l
+            dy = y2_l - y1_l
+            angle = np.degrees(np.arctan2(dy, dx))
+            if -45 <= angle <= 45 or 135 <= abs(angle) <= 180:
+                angles.append(angle)
+        
+        if not angles:
+            return image, (0,0,0,0)
+        
+        median_angle = np.median(angles)
+        
+        # اصلاح زاویه عمودی
+        if abs(median_angle) > 45:
+            median_angle = 90 - median_angle
+        
+        if abs(median_angle) < 2:
+            return image, (0,0,0,0)
+            
+        # چرخش تصویر
+        (h, w) = image.shape[:2]
+        center = (w//2, h//2)
+        M = cv2.getRotationMatrix2D(center, median_angle, 1.0)
+        
+        # محاسبه اندازه جدید
+        cos = np.abs(M[0,0])
+        sin = np.abs(M[0,1])
+        new_w = int((h * sin) + (w * cos))
+        new_h = int((h * cos) + (w * sin))
+        
+        M[0,2] += (new_w - w)/2
+        M[1,2] += (new_h - h)/2
+        
+        deskewed = cv2.warpAffine(image, M, (new_w, new_h), 
+                                flags=cv2.INTER_CUBIC,
+                                borderMode=cv2.BORDER_REPLICATE)
+        
+        # تبدیل مختصات با در نظر گرفتن مقیاس
+        original_points = np.array([
+            [0, 0], [w-1, 0], [w-1, h-1], [0, h-1]
+        ], dtype=np.float32)
+        
+        transformed_points = cv2.transform(
+            original_points.reshape(1, -1, 2), M
+        ).squeeze().astype(float)
+        
+        # اعمال بزرگنمایی
+        deskewed = cv2.resize(deskewed, None, 
+                            fx=scale_factor, 
+                            fy=scale_factor, 
+                            interpolation=cv2.INTER_LANCZOS4)
+        
+        # مقیاس‌گذاری مختصات
+        transformed_points *= scale_factor
+        
+        new_x1 = int(transformed_points[:,0].min())
+        new_y1 = int(transformed_points[:,1].min())
+        new_x2 = int(transformed_points[:,0].max())
+        new_y2 = int(transformed_points[:,1].max())
+        
+        return deskewed, (new_x1, new_y1, new_x2, new_y2)
+    
+    except Exception as e:
+        print(f"Error: {e}")
+        return image,(0,0,0,0)
 
 # Character Detection
 def detect_plate_chars(cropped_plate):
@@ -150,31 +245,76 @@ async def transmit_frames(websocket, path):
                             
                             if  len(plate_arvand[0]) >0 :
                                 
-                                for box in plate_arvand[0].boxes:
-                                    arvand_conf=int(box.conf[0]*100)
+                                for bos in plate_arvand[0].boxes:
+                                    arvand_conf=int(bos.conf[0]*100)
                                     if arvand_conf >= int(params.plateConf):
-                                        xMin, yMin, xMax, yMax = map(int,box[0].xyxy[0][:4])
-                                        d=yMax-yMin
-                                        tempyMax=yMax-int(d/2)
+                                        # xMin, yMin, xMax, yMax = map(int,box[0].xyxy[0][:4])
+                                        # d=yMax-yMin
+                                        # tempyMax=yMax-int(d/2)
                                         
-                                        cropped_plate_arvand = cropped_car[yMin:yMax, xMin:xMax]
-                                        cropped_plate_detected_arvand = cropped_car[yMin:tempyMax, xMin:xMax]
-                                        plate_text_arvand, char_conf_avg_arvand = detect_plate_chars(cropped_plate_detected_arvand)
+                                        # cropped_plate_arvand = cropped_car[yMin:yMax, xMin:xMax]
+                                        # cropped_plate_detected_arvand = cropped_car[yMin:tempyMax, xMin:xMax]
+                                        xMin, yMin, xMax, yMax = map(int, bos.xyxy[0][:4])
+                                        if xMin >= xMax or yMin >= yMax:
+                                            continue
+                                        
+                                        abs_x_min = x1 + xMin
+                                        abs_y_min = y1 + yMin
+                                        abs_x_max = x1 + xMax
+                                        abs_y_max = y1 + yMax
+                                        
+                                        cv2.rectangle(frame, (abs_x_min, abs_y_min), (abs_x_max, abs_y_max), (255, 255, 255), 2)
+                                        cropped_plate_arvnad = cropped_car[yMin:yMax, xMin:xMax]
+
+
+                                        # صاف کردن پلاک قبل از تشخیص کاراکتر
+                                        deskewed_plate, (newx1, newy1, newx2, newy2) = correct_perspective(cropped_plate_arvnad, 2.0)
+
+                                      # بررسی اعتبار deskewed_plate
+                                        if deskewed_plate.size == 0:
+                                            
+                                            continue
+
+                                        # بررسی و اصلاح مختصات
+                                        newx1 = max(0, newx1)
+                                        newy1 = max(0, newy1)
+                                        newx2 = min(deskewed_plate.shape[1], newx2)
+                                        newy2 = min(deskewed_plate.shape[0], newy2)
+
+                                        # چک نهایی اعتبار مختصات
+                                        if (newx2 <= newx1) or (newy2 <= newy1):
+                                     
+                                            newx1, newy1 = 0, 0
+                                            newx2, newy2 = deskewed_plate.shape[1], deskewed_plate.shape[0]
+
+                                        # محاسبه تقسیم
+                                        d = newy2 - newy1
+                                        tempyMax = newy1 + int(d/2)  # تقسیم به دو نیمه برابر
+
+                                        # چک نهایی قبل از کراپ
+                                        if tempyMax <= deskewed_plate.shape[0] and newx2 <= deskewed_plate.shape[1]:
+                                            cropped_plate_nesf = deskewed_plate[newy1:tempyMax, newx1:newx2]
+                                            if cropped_plate_nesf.size > 0:
+                                                continue
+                                    
+              
+                
+                                        plate_text_arvand, char_conf_avg_arvand = detect_plate_chars(cropped_plate_nesf)
                                         cv2.putText(cropped_car, f"Plate: {plate_text_arvand}", (xMin, yMin - 10), cv2.FONT_HERSHEY_SIMPLEX,
                                                     0.7, (0, 255, 255), 2, cv2.LINE_AA)
                                         cv2.rectangle(cropped_car,(xMin,yMin),(xMax,yMax),(51,103,53),2)
                                         confidance_arvand=float(params.charConf)*100
-                                        if char_conf_avg_arvand >= confidance_arvand and len(plate_text_arvand) >=5 :
+                                        if char_conf_avg_arvand >= 60  :
                                             db_entries_time(
-                                                number=plate_text_arvand,
-                                                charConfAvg=char_conf_avg_arvand,
-                                                plateConfAvg=arvand_conf,
-                                                croppedPlate=cropped_plate_arvand,
-                                                status="Active",
-                                                frame=frame,
-                                                isarvand='arvand',
-                                                rtpath=path
-                                            )
+                                                    number=plate_text_arvand,
+                                                    charConfAvg=char_conf_avg_arvand,
+                                                    plateConfAvg=arvand_conf,
+                                                    croppedPlate=deskewed_plate,
+                                                    status="Active",
+                                                    frame=frame,
+                                                    isarvand='arvand',
+                                                    rtpath=path
+                                                )
 
                         # Encode frame as JPEG and send via WebSocket
                 _, encoded = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 50])
