@@ -80,20 +80,25 @@ def insterMyentry(platePercent, charPercent, eDate, eTime, plateNum, status, ima
 #     sqlConnect.commit()
 #     sqlConnect.close()
 
-# def dbGetPlateLatestEntry(plateNumber):
-#     sqlConnect = sqlite3.connect(db_path)
-#     sqlCursor = sqlConnect.cursor()
+def dbGetPlateLatestEntry(plateNumber):
+    sqlConnect = sqlite3.connect(db_path)
+    sqlCursor = sqlConnect.cursor()
 
-#     FullEntriesSQL = f"""SELECT * FROM entry WHERE plateNum='{plateNumber}' ORDER BY eDate DESC LIMIT 1"""
-#     FullEntries = sqlCursor.execute(FullEntriesSQL).fetchall()
-#     # print(FullEntries[0][4]==plateNumber)
+    FullEntriesSQL = f"""SELECT * FROM entry WHERE plateNum='{plateNumber}' ORDER BY eDate DESC LIMIT 1"""
+    FullEntries = sqlCursor.execute(FullEntriesSQL).fetchall()
+    # print(FullEntries[0][4]==plateNumber)
 
-#     if len(FullEntries) != 0:
-#         FullData = dict(zip([c[0] for c in sqlCursor.description], FullEntries[0]))
-#         sqlConnect.commit()
-#         sqlConnect.close()
-#         return Entries(**FullData)
-#     return None
+    if len(FullEntries) != 0:
+        FullData = dict(zip([c[0] for c in sqlCursor.description], FullEntries[0]))
+        sqlConnect.commit()
+        sqlConnect.close()
+        return Entries(**FullData)
+    # fullsql=f"""SELECT * FROM entry LIMIT 1"""
+    # fullentry=sqlCursor.execute(fullsql).fetchall()
+    # fulldata=dict(zip([c[0] for c in sqlCursor.description], fullentry[0]))
+    # sqlConnect.commit()
+    # sqlConnect.close()
+    return None
 
 similarityTemp = ''
 
@@ -114,11 +119,22 @@ def db_entries_time(number, charConfAvg, plateConfAvg, croppedPlate, status, fra
       
 
         # Database operations for plate detection 
-        result =""
-        if result is not None and number != '':
-            strTime = time.strftime("%H:%M:%S")
-            strDate = time.strftime("%Y-%m-%d")
-            if timeDifference(strTime, strDate):
+        result = dbGetPlateLatestEntry(number)
+        if number != '':
+            if result is not None:
+                strTime = result.getTime()
+                strDate = result.getDate()
+                timediff=timeDifference(strTime, strDate,False)
+                
+            else:
+                strTime = time.strftime("%H:%M:%S")
+                strDate = time.strftime("%Y-%m-%d")
+                timediff=timeDifference(strTime, strDate,True)
+                
+                
+                
+            
+            if timediff:
                 display_time = timeNow.strftime("%H:%M:%S")
                 display_date = timeNow.strftime("%Y-%m-%d")
                 screenshot_path = f"output/screenshot/{number}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
@@ -158,14 +174,19 @@ def getFieldNames(fieldsList):
         fieldNamesOutput.append(params.fieldNames[value])
     return fieldNamesOutput
 
-def timeDifference(strTime, strDate):
+def timeDifference(strTime, strDate,isnone):
     # Uncomment the following if you want to calculate the actual time difference
-    # start_time = datetime.strptime(strTime + ' ' + strDate, "%H:%M:%S %Y-%m-%d")
-    # end_time = datetime.strptime(datetime.now().strftime("%H:%M:%S %Y-%m-%d"), "%H:%M:%S %Y-%m-%d")
-    # delta = end_time - start_time
-    # sec = delta.total_seconds()
-    # min = (sec / 60).__ceil__()
-    min = 2  # Set to 2 for testing purposes
+    start_time = datetime.datetime.strptime(strTime + ' ' + strDate, "%H:%M:%S %Y-%m-%d")
+    end_time = datetime.datetime.strptime(datetime.datetime.now().strftime("%H:%M:%S %Y-%m-%d"), "%H:%M:%S %Y-%m-%d")
+    delta = end_time - start_time
+    sec = delta.total_seconds()
+    if isnone:
+        min=2
+    else:
+        min = (sec / 60).__ceil__()
+
+    # min = 2  # Set to 2 for testing purposes
+
 
     if min > 1:
         return True
