@@ -241,7 +241,7 @@ async def transmit_frames(websocket, path):
                                             )
                                             break
                                         else:
-                                            deskewed_plate, (newx1, newy1, newx2, newy2) = correct_perspective(cropped_plate, 2.0)
+                                            deskewed_plate, (newx1, newy1, newx2, newy2) = correct_perspective(cropped_plate, 1.0)
                                             if deskewed_plate.size == 0:
                                                 
                                                 continue
