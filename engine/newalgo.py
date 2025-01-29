@@ -219,8 +219,7 @@ async def transmit_frames(websocket, path):
                                         plate_text, char_conf_avg = detect_plate_chars(cropped_plate)
 
                                         # Annotate frame with plate text
-                                        cv2.putText(cropped_car, f"Plate: {plate_text}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX,
-                                                    0.7, (0, 255, 128), 2, cv2.LINE_AA)
+                                        
                                         cv2.rectangle(cropped_car,(x_min,y_min),(x_max,y_max),(0,0,255),2)
                                         plate_text.replace('Taxi','x')
                                         confidance=float(params.charConf)*100
@@ -228,6 +227,8 @@ async def transmit_frames(websocket, path):
                                 
                                         # Save plate details if valid
                                         if char_conf_avg >= confidance and len(plate_text) >= 8:
+                                            cv2.putText(cropped_car, f"Plate: {plate_text}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                                                    0.7, (0, 255, 128), 2, cv2.LINE_AA)
                                             db_entries_time(
                                                 number=plate_text,
                                                 charConfAvg=char_conf_avg,
@@ -242,7 +243,7 @@ async def transmit_frames(websocket, path):
                                         else:
                                             deskewed_plate, (newx1, newy1, newx2, newy2) = correct_perspective(cropped_plate, 2.0)
                                             if deskewed_plate.size == 0:
-                                                print("خطا: deskewed_plate خالی است!")
+                                                
                                                 continue
                                             newx1 = max(0, newx1)
                                             newy1 = max(0, newy1)
@@ -256,8 +257,10 @@ async def transmit_frames(websocket, path):
                                             tempyMax = newy1 + int(d/2)  # تقسیم به دو نیمه برابر
                                             cropped_plate_nesf = deskewed_plate[newy1:tempyMax, newx1:newx2]
                                             plate_text_arvnad, char_conf_arvnad = detect_plate_chars(cropped_plate_nesf)
-                                            print(char_conf_arvnad)
-                                            if len(plate_text_arvnad) >=5 and char_conf_arvnad >=confidance:
+                                        
+                                            if len(plate_text_arvnad) >=5 and char_conf_arvnad >=confidance-3:
+                                                cv2.putText(cropped_car, f"Plate: {plate_text_arvnad}", (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                                                    0.7, (0, 255, 128), 2, cv2.LINE_AA)
                                                 db_entries_time(
                                                 number=plate_text_arvnad,
                                                 charConfAvg=char_conf_arvnad,
