@@ -42,7 +42,7 @@ class YOLOModels:
         logger.info("Loading YOLO models...")
         self.model_plate = torch.hub.load('yolov5', 'custom', plate_model_path, source='local', device=device, force_reload=True)
         self.model_char = torch.hub.load('yolov5', 'custom', char_model_path, source='local', force_reload=True)
-        self.model_arvand = YOLO(arvand_model_path, verbose=False).to(device)
+       
         self.carmodel=YOLO('model/yolo11n.pt',verbose=False).to(device)
 
 models = YOLOModels(params.modelPlate_path, params.modelCharX_path, params.modelArvand_path)
@@ -192,7 +192,7 @@ async def transmit_frames(websocket, path):
 
                 # Detect plates
             # Process frame for plate detection
-                car_res=models.carmodel(frame,device=device,classes=[2,7])
+                car_res=models.carmodel(frame,device=device,classes=[2,5,7])
                 if len(car_res[0])>0:
                     for box in car_res[0].boxes:
                         x1,y1,x2,y2=map(int,box.xyxy[0][:4])
